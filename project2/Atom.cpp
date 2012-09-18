@@ -8,7 +8,8 @@ Atom::Atom(System *system) {
 	this->r = zeros<vec> (3,1);
 	this->v = zeros<vec> (3,1);
 	this->F = zeros<vec> (3,1);
-	this->mass = 39.948;         // MD units
+	this->a = zeros<vec> (3,1);
+	this->mass = 1; // 39.948;         // MD units
 	this->type = 0;
 	this->system = system;
 }
@@ -35,7 +36,7 @@ vec Atom::calculateForce(int startAt) {
 		dr = this->r - atom->r;
 		drsquared = norm(dr,1);
 
-		F = 24*dr*(2/pow(drsquared,7) - 1/pow(drsquared,4));
+		F = 24*dr*(2*pow(drsquared,-7) - pow(drsquared,-4));
 		this->F += F;
 		atom->F -= F;
 	}

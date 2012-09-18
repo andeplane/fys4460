@@ -8,19 +8,8 @@
 
 using namespace std;
 
-long idum = -1;
-
-inline float squaredDistanceBetweenAtoms(Atom *atom1, Atom *atom2) {
-	return norm((atom1->r - atom2->r),1);
-}
-
-inline vec vectorBetweenAtoms(Atom *atom1, Atom *atom2) {
-	return atom1->r - atom2->r;
-}
-
-inline vec forceBetweenAtoms(Atom *atom1, Atom *atom2) {
-	return zeros<vec>(3,1);
-}
+long idum = -2;
+double t = 0;
 
 System::System(int N, double T, double rho) {
 	this->N = N;
@@ -29,25 +18,69 @@ System::System(int N, double T, double rho) {
 	this->initialize();
 }
 
-void System::step(double dt) {
-	Atom *atom0, *atom1;
-	float rsq, invSqrt;
-
-	mat v_temp = zeros<mat>(3,this->N); // Velocities at t+dt/2
-	
-	// Update positions
+void System::calculateAccelerations() {
 	for(int n=0;n<this->N;n++) {
-		vec a = this->atoms[n]->calculateForce(n+1)/this->atoms[n]->mass;
-
-		v_temp.col(n) = this->atoms[n]->v + 0.5*a*dt;
-		this->atoms[n]->addR(v_temp.col(n)*dt + 10*L, L); // Update position, periodic boundary are handled in addR
+		this->atoms[n]->F.zeros();
+		this->atoms[n]->a.zeros();	
 	}
 
-	// Update velocity
-	for(int n=0;n<this->N;n++) {
-		vec a = this->atoms[n]->calculateForce(n+1)/this->atoms[n]->mass;
+	vec dr = zeros<vec>(3,1);
+	double dr_2;
+	double dr_6;
+	double dr_12;
 
-		this->atoms[n]->v = v_temp.col(n) + 0.5*a*dt;
+	Atom *atom0;
+	Atom *atom1;
+	double f;
+	
+	for(int i=0;i<this->N-1;i++) {
+		atom0 = this->atoms[i];
+
+		for(int j=i+1;j<this->N;j++) {
+			atom1 = this->atoms[j];
+
+			dr = atom0->r-atom1->r;
+
+			for(int i=0;i<3;i++) {
+				if(dr(i) > L / 2.0) 
+					dr(i) -= L;
+				else if(dr(i)< -L / 2.0)
+					dr(i) += L;
+			}
+
+			dr_2 = dot(dr,dr);
+			
+			dr_6 = pow(dr_2,3);
+			dr_12 = pow(dr_6,2);
+			
+			f = 24*(2.0/dr_12-1.0/dr_6)/dr_2;
+
+			atom0->a += f*dr;
+			atom1->a -= f*dr;
+		}
+	}
+
+	vec sumF = zeros<vec>(3,1);
+	for(int n=0;n<this->N;n++) {
+		sumF += this->atoms[n]->a;
+	}
+}
+
+void System::step(double dt) {
+	t += dt;
+
+	this->calculateAccelerations();
+	for(int n=0;n<this->N;n++) {
+		this->atoms[n]->v += 0.5*this->atoms[n]->a*dt;
+		this->atoms[n]->r += this->atoms[n]->v*dt + 10*L;
+
+		this->atoms[n]->r(0) = fmod(this->atoms[n]->r(0),L);
+		this->atoms[n]->r(1) = fmod(this->atoms[n]->r(1),L);
+		this->atoms[n]->r(2) = fmod(this->atoms[n]->r(2),L);
+	}
+	this->calculateAccelerations();
+	for(int n=0;n<this->N;n++) {
+		this->atoms[n]->v += 0.5*this->atoms[n]->a*dt;
 	}
 }
 
@@ -67,11 +100,11 @@ void System::initPositions() {
 	int M=1;
 	while(4*M*M*M < this->N) ++M;
 	double a = this->L/M;
-
+	
 	double xCell[4] = {0.25, 0.75, 0.75, 0.25};
 	double yCell[4] = {0.25, 0.75, 0.25, 0.75};
 	double zCell[4] = {0.25, 0.25, 0.75, 0.75};
-
+	
 	int n = 0;
 	for(int x = 0; x < M; x++) {
 		for(int y = 0; y < M; y++) {

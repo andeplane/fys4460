@@ -14,6 +14,7 @@ public:
 	double mass;
 	vec r;
 	vec v;
+	vec a;
 	vec F;
 	System *system;
 	

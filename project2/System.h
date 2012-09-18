@@ -31,8 +31,9 @@ public:
 	void printPositionsToFile(ofstream *file);
 	void printVelocitiesToScreen();
 	void sampleStatistics();
+	void calculateAccelerations();
 	void step(double dt);
-	System(int N=1024, double T=1.0, double rho=0.8);
+	System(int N=108, double T=1.0, double rho=0.8);
 
 };
 

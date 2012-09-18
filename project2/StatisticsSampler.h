@@ -13,11 +13,13 @@ public:
 	bool pressure;
 	ofstream *temperatureFile;
 	ofstream *pressureFile;
+	ofstream *energyFile;
 
 	StatisticsSampler(System *system);
 	void sample(double t);
 	void calculateTemperature(double t);
 	void calculatePressure(double t);
+	void calculateEnergy(double t);
 };
 
 #endif

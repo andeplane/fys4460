@@ -11,7 +11,9 @@ using namespace arma;
 using namespace std;
 
 int main(int argc, char *argv[]) {
-	System *system = new System(256);
+	// 108, 256, 500, 864, 1372
+	System *system = new System(108);
+
 	StatisticsSampler *sampler = new StatisticsSampler(system);
 
 	ofstream *file = new ofstream;
@@ -20,7 +22,7 @@ int main(int argc, char *argv[]) {
 	double t = 0;
 
 	system->printPositionsToFile(file);
-	int timesteps = 1200;
+	int timesteps = 1000;
 
 	for(int i=0;i<timesteps;i++) {
 		if(!(i%(timesteps/100))) {

@@ -36,13 +36,11 @@ void System::step(double dt) {
 
 	mat v_temp = zeros<mat>(3,this->N);
 	
+	// Calculate forces
 	for(int i=0;i<this->N-1;i++) {
 		for(int j=i+1;j<this->N;j++) {
 			atom0 = this->atoms[i];
 			atom1 = this->atoms[j];
-
-			rsq = squaredDistanceBetweenAtoms(atom0,atom1);
-			invSqrt = FastInvSqrt(rsq);
 
 			F = forceBetweenAtoms(atom0,atom1);
 			atom0->a += F/atom0->mass;
@@ -50,19 +48,17 @@ void System::step(double dt) {
 		}
 	}
 
+	// Update positions
 	for(int n=0;n<this->N;n++) {
 		v_temp.col(n) = this->atoms[n]->v + 0.5*this->atoms[n]->a*dt;
-		this->atoms[n]->r += v_temp.col(n)*dt + 10*L;
-		this->atoms[n]->r(0) = fmod(this->atoms[n]->r(0),L);
-		this->atoms[n]->r(1) = fmod(this->atoms[n]->r(1),L);
-		this->atoms[n]->r(2) = fmod(this->atoms[n]->r(2),L);
-		
-
+		this->atoms[n]->addR(v_temp.col(n)*dt + 10*L, L); // Update position, periodic boundary are handled in addR
 	}
 
+	// Reset forces
 	for(int n=0;n<this->N;n++) 
 		this->atoms[n]->a.zeros();
 
+	// Calculate forces 
 	for(int i=0;i<this->N-1;i++) {
 		for(int j=i+1;j<this->N;j++) {
 			atom0 = this->atoms[i];
@@ -74,6 +70,7 @@ void System::step(double dt) {
 		}
 	}
 
+	// Update velocity
 	for(int n=0;n<this->N;n++) {
 		this->atoms[n]->v = v_temp.col(n) + 0.5*this->atoms[n]->a*dt;
 	}

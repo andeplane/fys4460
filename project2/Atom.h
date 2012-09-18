@@ -16,6 +16,7 @@ public:
 	
 	char   type;
 	Atom();
+	void addR(vec dr,double L);
 };
 
 #endif

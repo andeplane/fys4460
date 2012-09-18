@@ -16,7 +16,6 @@ int main(int argc, char *argv[]) {
 	file->open("pos.xyz");
 
 	system->printPositionsToFile(file);
-	// system->printVelocitiesToScreen();
 	for(int i=0;i<500;i++) {
 		system->step(0.005);
 		system->printPositionsToFile(file);

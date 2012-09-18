@@ -52,7 +52,12 @@ void System::step(double dt) {
 
 	for(int n=0;n<this->N;n++) {
 		v_temp.col(n) = this->atoms[n]->v + 0.5*this->atoms[n]->a*dt;
-		this->atoms[n]->r += v_temp.col(n)*dt;
+		this->atoms[n]->r += v_temp.col(n)*dt + 10*L;
+		this->atoms[n]->r(0) = fmod(this->atoms[n]->r(0),L);
+		this->atoms[n]->r(1) = fmod(this->atoms[n]->r(1),L);
+		this->atoms[n]->r(2) = fmod(this->atoms[n]->r(2),L);
+		
+
 	}
 
 	for(int n=0;n<this->N;n++) 
@@ -62,9 +67,6 @@ void System::step(double dt) {
 		for(int j=i+1;j<this->N;j++) {
 			atom0 = this->atoms[i];
 			atom1 = this->atoms[j];
-
-			rsq = squaredDistanceBetweenAtoms(atom0,atom1);
-			invSqrt = FastInvSqrt(rsq);
 
 			F = forceBetweenAtoms(atom0,atom1);
 			atom0->a += F/atom0->mass;

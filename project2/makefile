@@ -8,8 +8,8 @@ CXXFLAGS =
 LIBS = -lm -larmadillo
 
 EXEC = md
-SRC = md.cpp Atom.cpp System.cpp
-OBJ = md.o Atom.o System.o
+SRC = md.cpp Atom.cpp System.cpp StatisticsSampler.cpp lib.cpp
+OBJ = md.o Atom.o System.o StatisticsSampler.o lib.o
 
 $(SCR): 
 	$(CXX) $(CXXFLAGS) -c $(SRC)  

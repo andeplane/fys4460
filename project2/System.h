@@ -1,10 +1,12 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
+class Atom;
+
 #include <fstream>
 #include "Atom.h"
 
-float FastInvSqrt(float x);
+using namespace std;
 
 class System {
 private:
@@ -28,6 +30,7 @@ public:
 	double getLength();
 	void printPositionsToFile(ofstream *file);
 	void printVelocitiesToScreen();
+	void sampleStatistics();
 	void step(double dt);
 	System(int N=1024, double T=1.0, double rho=0.8);
 

@@ -4,8 +4,11 @@
 #include <fstream>
 #include "Atom.h"
 #include "System.h"
+#include "lib.h"
 
 using namespace std;
+
+long idum = -1;
 
 inline float squaredDistanceBetweenAtoms(Atom *atom1, Atom *atom2) {
 	return norm((atom1->r - atom2->r),1);
@@ -27,60 +30,31 @@ System::System(int N, double T, double rho) {
 }
 
 void System::step(double dt) {
-	for(int n=0;n<this->N;n++) 
-		this->atoms[n]->a.zeros();
-
-	vec F = zeros<vec>(3,1);
 	Atom *atom0, *atom1;
 	float rsq, invSqrt;
 
-	mat v_temp = zeros<mat>(3,this->N);
+	mat v_temp = zeros<mat>(3,this->N); // Velocities at t+dt/2
 	
-	// Calculate forces
-	for(int i=0;i<this->N-1;i++) {
-		for(int j=i+1;j<this->N;j++) {
-			atom0 = this->atoms[i];
-			atom1 = this->atoms[j];
-
-			F = forceBetweenAtoms(atom0,atom1);
-			atom0->a += F/atom0->mass;
-			atom1->a -= F/atom1->mass;
-		}
-	}
-
 	// Update positions
 	for(int n=0;n<this->N;n++) {
-		v_temp.col(n) = this->atoms[n]->v + 0.5*this->atoms[n]->a*dt;
+		vec a = this->atoms[n]->calculateForce(n+1)/this->atoms[n]->mass;
+
+		v_temp.col(n) = this->atoms[n]->v + 0.5*a*dt;
 		this->atoms[n]->addR(v_temp.col(n)*dt + 10*L, L); // Update position, periodic boundary are handled in addR
-	}
-
-	// Reset forces
-	for(int n=0;n<this->N;n++) 
-		this->atoms[n]->a.zeros();
-
-	// Calculate forces 
-	for(int i=0;i<this->N-1;i++) {
-		for(int j=i+1;j<this->N;j++) {
-			atom0 = this->atoms[i];
-			atom1 = this->atoms[j];
-
-			F = forceBetweenAtoms(atom0,atom1);
-			atom0->a += F/atom0->mass;
-			atom1->a -= F/atom1->mass;
-		}
 	}
 
 	// Update velocity
 	for(int n=0;n<this->N;n++) {
-		this->atoms[n]->v = v_temp.col(n) + 0.5*this->atoms[n]->a*dt;
+		vec a = this->atoms[n]->calculateForce(n+1)/this->atoms[n]->mass;
+
+		this->atoms[n]->v = v_temp.col(n) + 0.5*a*dt;
 	}
 }
-
 
 void System::initialize() {
 	this->atoms = new Atom*[this->N];
 	for(int n=0;n<this->N;n++) {
-		this->atoms[n] = new Atom();
+		this->atoms[n] = new Atom(this);
 	}
 
 	this->initPositions();
@@ -124,8 +98,8 @@ double System::gasdev() {
 	double fac, rsq, v1, v2;
 	if(!available) {
 		do {
-			v1 = 2.0*rand() / double(RAND_MAX) - 1.0;
-			v2 = 2.0*rand() / double(RAND_MAX) - 1.0;
+			v1 = 2.0*ran0(&idum) - 1.0;
+			v2 = 2.0*ran0(&idum) - 1.0;
 			rsq = v1*v1+v2*v2;
 		} while (rsq >= 1.0 || rsq == 0.0);
 

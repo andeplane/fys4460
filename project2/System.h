@@ -1,7 +1,10 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
+#include <fstream>
 #include "Atom.h"
+
+float FastInvSqrt(float x);
 
 class System {
 private:
@@ -23,7 +26,9 @@ public:
 	double getTemperature();
 	double getDensity();
 	double getLength();
-	void printPositionsToFile();
+	void printPositionsToFile(ofstream *file);
+	void printVelocitiesToScreen();
+	void step(double dt);
 	System(int N=1024, double T=1.0, double rho=0.8);
 
 };

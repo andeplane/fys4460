@@ -2,16 +2,20 @@
 #define ATOM_H
 
 #include <iostream>
+#include <armadillo>
+
+using namespace arma;
 using namespace std;
 
 class Atom {
 public:
-	double *r;
-	double *v;
-	double *a;
+	double mass;
+	vec r;
+	vec v;
+	vec a;
+	
 	char   type;
 	Atom();
-	// string positionToString();
 };
 
 #endif

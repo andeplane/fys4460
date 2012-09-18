@@ -10,9 +10,19 @@ using namespace arma;
 using namespace std;
 
 int main(int argc, char *argv[]) {
-	System *system = new System();
+	System *system = new System(256);
 
-	system->printPositionsToFile();
+	ofstream *file = new ofstream;
+	file->open("pos.xyz");
+
+	system->printPositionsToFile(file);
+	// system->printVelocitiesToScreen();
+	for(int i=0;i<500;i++) {
+		system->step(0.005);
+		system->printPositionsToFile(file);
+	}
+	
+	file->close();
 
 	return 0;
 }

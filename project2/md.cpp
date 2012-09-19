@@ -12,13 +12,13 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 	// 108, 256, 500, 864, 1372
-	System *system = new System(1372);
+	System *system = new System(256);
 
 	StatisticsSampler *sampler = new StatisticsSampler(system);
 
 	ofstream *file = new ofstream;
 	file->open("pos.xyz");
-	double dt = 0.005;
+	double dt = 0.0025;
 	double t = 0;
 
 	system->printPositionsToFile(file);

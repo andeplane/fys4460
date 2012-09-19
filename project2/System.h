@@ -19,7 +19,9 @@ private:
 	void initialize();
 	void initPositions();
 	void initVelocities();
+	void updateVerletList();
 	void rescaleVelocities();
+	void calculateAccelerations();
 	
 	double gasdev();
 public:
@@ -29,9 +31,7 @@ public:
 	double getDensity();
 	double getLength();
 	void printPositionsToFile(ofstream *file);
-	void printVelocitiesToScreen();
-	void sampleStatistics();
-	void calculateAccelerations();
+
 	void step(double dt);
 	System(int N=108, double T=1.0, double rho=0.8);
 

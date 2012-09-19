@@ -1,3 +1,6 @@
+#define VERLET_LISTS
+#define RESCALE_VELOCITIES
+
 #include <iostream>
 #include "math.h"
 #include "time.h"
@@ -8,7 +11,7 @@
 
 using namespace std;
 
-long idum = -2;
+long idum = -3;
 double t = 0;
 int steps = 0;
 
@@ -18,6 +21,8 @@ System::System(int N, double T, double rho) {
 	this->rho = rho;
 	this->initialize();
 }
+
+double maxF = 0;
 
 void System::calculateAccelerations() {
 	for(int n=0;n<this->N;n++) {
@@ -36,18 +41,15 @@ void System::calculateAccelerations() {
 	
 	for(int i=0;i<this->N-1;i++) {
 		atom0 = this->atoms[i];
-
+#ifdef VERLET_LISTS
+		for(int j=0;j<atom0->interactingParticles;j++) {
+			atom1 = this->atoms[atom0->interactingParticlesList[j]];
+#else
 		for(int j=i+1;j<this->N;j++) {
 			atom1 = this->atoms[j];
-
-			dr = atom0->r-atom1->r;
-
-			for(int i=0;i<3;i++) {
-				if(dr(i) > L / 2.0) 
-					dr(i) -= L;
-				else if(dr(i)< -L / 2.0)
-					dr(i) += L;
-			}
+#endif
+			
+			dr = atom0->distanceToAtom(atom1);
 
 			dr_2 = dot(dr,dr);
 			
@@ -68,13 +70,17 @@ void System::calculateAccelerations() {
 }
 
 void System::step(double dt) {
+#ifdef VERLET_LISTS
+	this->updateVerletList();
+#endif
+
 	t += dt;
 	steps++;
 
 	this->calculateAccelerations();
 	for(int n=0;n<this->N;n++) {
 		this->atoms[n]->v += 0.5*this->atoms[n]->a*dt;
-		this->atoms[n]->addR(this->atoms[n]->v*dt + 10*L,L);
+		this->atoms[n]->addR(this->atoms[n]->v*dt + 10*L);
 	}
 
 	this->calculateAccelerations();
@@ -82,8 +88,30 @@ void System::step(double dt) {
 		this->atoms[n]->v += 0.5*this->atoms[n]->a*dt;
 	}
 
+#ifdef RESCALE_VELOCITIES
 	if(!(steps % 200)) {
 		this->rescaleVelocities();
+	}
+#endif
+}
+
+void System::updateVerletList() {
+	if(steps % 50) return;
+
+	Atom *atom0, *atom1;
+	vec dr;
+	for(int n=0;n<this->N;n++) 
+		this->atoms[n]->interactingParticles = 0;
+
+	for(int i=0;i<this->N-1;i++) {
+		atom0 = this->atoms[i];
+		for(int j=i+1;j<this->N;j++) {
+			atom1 = this->atoms[j];
+			dr = atom0->distanceToAtom(atom1);
+
+			if(norm(dr,2) < 3.2) // These will be in contact later
+				atom0->interactingParticlesList[atom0->interactingParticles++] = j;
+		}
 	}
 }
 

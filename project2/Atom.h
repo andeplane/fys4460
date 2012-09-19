@@ -17,11 +17,12 @@ public:
 	vec a;
 	vec F;
 	System *system;
+	int interactingParticles;
+	int *interactingParticlesList;
 	
-
 	Atom(System *system);
-	void addR(vec dr,double L);
-	vec calculateForce(int startAt);
+	void addR(vec dr);
+	vec distanceToAtom(Atom *atom);
 };
 
 #endif

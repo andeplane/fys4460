@@ -31,8 +31,6 @@ void StatisticsSampler::calculateTemperature(double t) {
 		vsquared += norm(atoms[n]->v,1);
 	}
 
-	// printf("Max velocity = %f\n",sqrt(vmax));
-
 	vsquared/=(3*(N-1));
 
 	*this->temperatureFile << t << " " << vsquared << endl;

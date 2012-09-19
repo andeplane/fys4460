@@ -1,7 +1,11 @@
 from numpy import *
 import matplotlib.pyplot as plt
-# from sh import md
-arr = genfromtxt('energy.dat', dtype=None)
+from sh import pwd
+from sh import export
+str = pwd()
 
-plt.plot(arr[:,0],arr[:,1])
-plt.show()
+# from sh import md
+#arr = genfromtxt('energy.dat', dtype=None)
+
+#plt.plot(arr[:,0],arr[:,1])
+#plt.show()

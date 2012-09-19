@@ -10,6 +10,7 @@ using namespace std;
 
 long idum = -2;
 double t = 0;
+int steps = 0;
 
 System::System(int N, double T, double rho) {
 	this->N = N;
@@ -68,19 +69,21 @@ void System::calculateAccelerations() {
 
 void System::step(double dt) {
 	t += dt;
+	steps++;
 
 	this->calculateAccelerations();
 	for(int n=0;n<this->N;n++) {
 		this->atoms[n]->v += 0.5*this->atoms[n]->a*dt;
-		this->atoms[n]->r += this->atoms[n]->v*dt + 10*L;
-
-		this->atoms[n]->r(0) = fmod(this->atoms[n]->r(0),L);
-		this->atoms[n]->r(1) = fmod(this->atoms[n]->r(1),L);
-		this->atoms[n]->r(2) = fmod(this->atoms[n]->r(2),L);
+		this->atoms[n]->addR(this->atoms[n]->v*dt + 10*L,L);
 	}
+
 	this->calculateAccelerations();
 	for(int n=0;n<this->N;n++) {
 		this->atoms[n]->v += 0.5*this->atoms[n]->a*dt;
+	}
+
+	if(!(steps % 200)) {
+		this->rescaleVelocities();
 	}
 }
 
@@ -180,12 +183,6 @@ double System::getTemperature() { return this->T; }
 double System::getDensity() { return this->rho; }
 double System::getLength() { return this->L; }
 
-void System::printVelocitiesToScreen() {
-	for(int n=0;n<this->N;n++) {
-		printf("r[%d]=(%f,%f,%f)\n",n,this->atoms[n]->v(0),this->atoms[n]->v(1),this->atoms[n]->v(2));
-	}
-}
-
 void System::printPositionsToFile(ofstream *file) {
 	*file << this->N << endl;
 	*file << "H atoms are the face atoms, O are the cube atoms" << endl;
@@ -194,13 +191,4 @@ void System::printPositionsToFile(ofstream *file) {
 		*file << (this->atoms[n]->type ? "H " : "O ") << this->atoms[n]->r(0) << " " << this->atoms[n]->r(1) << " " << this->atoms[n]->r(2) << endl;
 	}
 	
-}
-
-float FastInvSqrt(float x) {
-  float xhalf = 0.5f * x;
-  int i = *(int*)&x;         // evil floating point bit level hacking
-  i = 0x5f3759df - (i >> 1);  // what the fuck?
-  x = *(float*)&i;
-  x = x*(1.5f-(xhalf*x*x));
-  return x;
 }

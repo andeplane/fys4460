@@ -12,7 +12,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 	// 108, 256, 500, 864, 1372
-	System *system = new System(256);
+	System *system = new System(1372, 3);
 
 	StatisticsSampler *sampler = new StatisticsSampler(system);
 

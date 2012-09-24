@@ -1,5 +1,5 @@
 #define VERLET_LISTS
-#define RESCALE_VELOCITIES
+// #define RESCALE_VELOCITIES
 
 #include <iostream>
 #include "math.h"

@@ -14,11 +14,13 @@ public:
 	bool pressure;
 	bool energy;
 	bool printVelocities;
-	// ofstream *velocityFile;
+	bool diffusionConstant;
+
+	FILE *velocityFile;
 	FILE *temperatureFile;
 	FILE *pressureFile;
 	FILE *energyFile;
-	FILE *velocityFile;
+	FILE *diffusionFile;
 
 	StatisticsSampler(System *system);
 	void sample(double t);
@@ -26,6 +28,7 @@ public:
 	void calculatePressure(double t);
 	void calculateEnergy(double t);
 	void calculateVelocities(double t);
+	void calculateDiffusionConstant(double t);
 };
 
 #endif

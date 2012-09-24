@@ -10,13 +10,14 @@ StatisticsSampler::StatisticsSampler(System *system) {
 	this->temperature = true;
 	this->pressure = true;
 	this->energy = true;
-	this->printVelocities = true;
+	this->printVelocities = false;
+	this->diffusionConstant = true;
 
 	this->temperatureFile = fopen("temperature.dat","w");
 	this->pressureFile    = fopen("pressure.dat","w");
 	this->energyFile      = fopen("energy.dat","w");
-	this->velocityFile = fopen("velocities.dat","w");
-
+	this->velocityFile = fopen("velocity.dat","w");
+	this->diffusionFile = fopen("diffusion.dat","w");
 }
 
 void StatisticsSampler::sample(double t) {
@@ -24,6 +25,7 @@ void StatisticsSampler::sample(double t) {
 	this->calculateEnergy(t);
 	this->calculatePressure(t);
 	this->calculateVelocities(t);
+	this->calculateDiffusionConstant(t);
 
 	steps++;
 }
@@ -87,6 +89,23 @@ void StatisticsSampler::calculateVelocities(double t) {
 
 		fprintf(this->velocityFile, "%f %f %f %f \n",t, atom->v(0),atom->v(1),atom->v(2));
 	}
+}
 
+void StatisticsSampler::calculateDiffusionConstant(double t) {
+	
+	if(!this->diffusionConstant || !t) return;
+
+	int N = this->system->N;
+	Atom **atoms = this->system->atoms;
+	double rsquared = 0;
+	for(int n=0;n<N;n++) {
+		rsquared += atoms[n]->squaredDistanceFromInitialPosition();
+	}
+	rsquared /= N;
+	double D = rsquared/(6*t);
+	
+	fprintf(this->diffusionFile, "%f %f\n",t, D);
+	// fprintf(this->diffusionConstantFile, "%f %f\n",t, D);
+	// fprintf(this->diffusionFile, "Nothing is happening");
 }
 

@@ -94,7 +94,7 @@ void System::step(double dt) {
 	this->calculateAccelerations();
 	for(int n=0;n<this->N;n++) {
 		this->atoms[n]->v += 0.5*this->atoms[n]->a*dt;
-		this->atoms[n]->addR(this->atoms[n]->v*dt + 10*L);
+		this->atoms[n]->addR(this->atoms[n]->v*dt);
 	}
 
 	this->calculateAccelerations();

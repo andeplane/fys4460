@@ -10,6 +10,7 @@
 #include "lib.h"
 #include "initialConditions.cpp"
 
+using namespace arma;
 using namespace std;
 
 double t = 0;
@@ -25,6 +26,9 @@ System::System(int N, double T, double rho) {
 double maxF = 0;
 
 void System::calculateAccelerations() {
+	this->P = this->rho*this->T;
+	double volume = pow(this->L,3.0);
+
 	for(int n=0;n<this->N;n++) {
 		this->atoms[n]->F.zeros();
 		this->atoms[n]->a.zeros();	
@@ -40,8 +44,11 @@ void System::calculateAccelerations() {
 	Atom *atom1;
 	double f,potential_energy;
 	
+	double dP = 0;
+	
 	for(int i=0;i<this->N-1;i++) {
 		atom0 = this->atoms[i];
+
 #ifdef VERLET_LISTS
 		for(int j=0;j<atom0->interactingParticles;j++) {
 			atom1 = this->atoms[atom0->interactingParticlesList[j]];
@@ -58,6 +65,8 @@ void System::calculateAccelerations() {
 			dr_12 = pow(dr_6,2);
 			
 			f = 24*(2.0/dr_12-1.0/dr_6)/dr_2;
+			dP += f*norm(dr,2);
+
 			potential_energy = 4*(1.0/dr_12 - 1.0/dr_6);
 
 			atom0->a += f*dr;
@@ -66,6 +75,7 @@ void System::calculateAccelerations() {
 			atom1->potential_energy += potential_energy;
 		}
 	}
+	this->P += 1.0/(3*volume)*dP;
 
 	vec sumF = zeros<vec>(3,1);
 	for(int n=0;n<this->N;n++) {

@@ -24,6 +24,7 @@ public:
 	double T; 	// Temperature
 	double rho; // Density
 	double L;   // Length
+	double P;	// Pressure
 	
 	// int getNumberOfAtoms();
 	// double getTemperature();

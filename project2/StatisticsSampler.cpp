@@ -67,7 +67,7 @@ void StatisticsSampler::calculateEnergy(double t) {
 void StatisticsSampler::calculatePressure(double t) {
 	if(!this->pressure) return;
 
-	
+	fprintf(this->pressureFile, "%f %f \n",t, this->system->P);
 }
 
 void StatisticsSampler::calculateVelocities(double t) {

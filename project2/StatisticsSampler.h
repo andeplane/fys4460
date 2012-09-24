@@ -2,6 +2,7 @@
 #define STATISTICSSAMPLER_H
 
 #include "Atom.h"
+#include <stdio.h>
 #include "System.h"
 #include <fstream>
 
@@ -12,15 +13,19 @@ public:
 	bool temperature;
 	bool pressure;
 	bool energy;
+	bool printVelocities;
 	ofstream *temperatureFile;
 	ofstream *pressureFile;
 	ofstream *energyFile;
+	// ofstream *velocityFile;
+	FILE *velocityFile;
 
 	StatisticsSampler(System *system);
 	void sample(double t);
 	void calculateTemperature(double t);
 	void calculatePressure(double t);
 	void calculateEnergy(double t);
+	void calculateVelocities(double t);
 };
 
 #endif

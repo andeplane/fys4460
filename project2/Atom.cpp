@@ -14,12 +14,12 @@ Atom::Atom(System *system) {
 	this->system = system;
 
 	this->interactingParticles = 0;
-	this->interactingParticlesList = new int[system->getNumberOfAtoms()];
+	this->interactingParticlesList = new int[system->N];
 }
 
 void Atom::addR(vec dr) {
 	this->r += dr;
-	double L = this->system->getLength();
+	double L = this->system->L;
 
 	this->r(0) = fmod(this->r(0),L);
 	this->r(1) = fmod(this->r(1),L);
@@ -28,7 +28,7 @@ void Atom::addR(vec dr) {
 
 vec Atom::distanceToAtom(Atom *atom) {
 	vec dr = this->r-atom->r;
-	double L = this->system->getLength();
+	double L = this->system->L;
 
 	for(int i=0;i<3;i++) {
 		if(dr(i) > L / 2.0) 

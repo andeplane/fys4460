@@ -8,7 +8,7 @@
 #include "Atom.h"
 #include "System.h"
 #include "lib.h"
-#include "initialConditions.h"
+#include "initialConditions.cpp"
 
 using namespace std;
 
@@ -114,14 +114,6 @@ void System::updateVerletList() {
 		}
 	}
 }
-
-
-
-Atom ** System::getAtoms() { return this->atoms; }
-int System::getNumberOfAtoms() { return this->N; }
-double System::getTemperature() { return this->T; }
-double System::getDensity() { return this->rho; }
-double System::getLength() { return this->L; }
 
 void System::printPositionsToFile(ofstream *file) {
 	*file << this->N << endl;

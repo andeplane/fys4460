@@ -1,3 +1,5 @@
+// #define ARMA_NO_DEBUG
+
 #include <iostream>
 #include "math.h"
 #include "time.h"
@@ -11,8 +13,12 @@ using namespace arma;
 using namespace std;
 
 int main(int argc, char *argv[]) {
+
+	int N = argc > 1 ? atoi(argv[1]) : 108;
+	int T = argc > 2 ? atof(argv[2]) : 1;
+
 	// 108, 256, 500, 864, 1372
-	System *system = new System(1372, 3);
+	System *system = new System(N, T);
 
 	StatisticsSampler *sampler = new StatisticsSampler(system);
 

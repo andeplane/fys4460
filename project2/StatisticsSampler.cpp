@@ -7,6 +7,7 @@ StatisticsSampler::StatisticsSampler(System *system) {
 	this->system = system;
 	this->temperature = true;
 	this->pressure = true;
+	this->energy = true;
 
 	this->temperatureFile = new ofstream("temperature.dat");
 	this->pressureFile    = new ofstream("pressure.dat");
@@ -16,6 +17,7 @@ StatisticsSampler::StatisticsSampler(System *system) {
 void StatisticsSampler::sample(double t) {
 	this->calculateTemperature(t);
 	this->calculateEnergy(t);
+	this->calculatePressure(t);
 }
 
 void StatisticsSampler::calculateTemperature(double t) {
@@ -37,7 +39,7 @@ void StatisticsSampler::calculateTemperature(double t) {
 }
 
 void StatisticsSampler::calculateEnergy(double t) {
-	if(!this->temperature) return;
+	if(!this->energy) return;
 	int N = this->system->getNumberOfAtoms();
 	double E = 0;
 

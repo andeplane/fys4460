@@ -11,6 +11,7 @@ private:
 public:
 	bool temperature;
 	bool pressure;
+	bool energy;
 	ofstream *temperatureFile;
 	ofstream *pressureFile;
 	ofstream *energyFile;

@@ -12,6 +12,7 @@ class Atom {
 public:
 	char   type;
 	double mass;
+	double potential_energy;
 	vec r;
 	vec v;
 	vec a;
@@ -19,7 +20,7 @@ public:
 	System *system;
 	int interactingParticles;
 	int *interactingParticlesList;
-	
+
 	Atom(System *system);
 	void addR(vec dr);
 	vec distanceToAtom(Atom *atom);

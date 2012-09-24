@@ -14,10 +14,10 @@ public:
 	bool pressure;
 	bool energy;
 	bool printVelocities;
-	ofstream *temperatureFile;
-	ofstream *pressureFile;
-	ofstream *energyFile;
 	// ofstream *velocityFile;
+	FILE *temperatureFile;
+	FILE *pressureFile;
+	FILE *energyFile;
 	FILE *velocityFile;
 
 	StatisticsSampler(System *system);

@@ -28,6 +28,7 @@ void System::calculateAccelerations() {
 	for(int n=0;n<this->N;n++) {
 		this->atoms[n]->F.zeros();
 		this->atoms[n]->a.zeros();	
+		this->atoms[n]->potential_energy = 0;
 	}
 
 	vec dr = zeros<vec>(3,1);
@@ -37,7 +38,7 @@ void System::calculateAccelerations() {
 
 	Atom *atom0;
 	Atom *atom1;
-	double f;
+	double f,potential_energy;
 	
 	for(int i=0;i<this->N-1;i++) {
 		atom0 = this->atoms[i];
@@ -57,9 +58,12 @@ void System::calculateAccelerations() {
 			dr_12 = pow(dr_6,2);
 			
 			f = 24*(2.0/dr_12-1.0/dr_6)/dr_2;
+			potential_energy = 4*(1.0/dr_12 - 1.0/dr_6);
 
 			atom0->a += f*dr;
+			atom0->potential_energy += potential_energy;
 			atom1->a -= f*dr;
+			atom1->potential_energy += potential_energy;
 		}
 	}
 

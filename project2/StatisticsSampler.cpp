@@ -12,10 +12,9 @@ StatisticsSampler::StatisticsSampler(System *system) {
 	this->energy = true;
 	this->printVelocities = true;
 
-	this->temperatureFile = new ofstream("temperature.dat");
-	this->pressureFile    = new ofstream("pressure.dat");
-	this->energyFile      = new ofstream("energy.dat");
-	// this->velocityFile      = new ofstream("velocities.dat");
+	this->temperatureFile = fopen("temperature.dat","w");
+	this->pressureFile    = fopen("pressure.dat","w");
+	this->energyFile      = fopen("energy.dat","w");
 	this->velocityFile = fopen("velocities.dat","w");
 
 }
@@ -44,21 +43,25 @@ void StatisticsSampler::calculateTemperature(double t) {
 
 	vsquared/=(3*(N-1));
 
-	*this->temperatureFile << t << " " << vsquared << endl;
+	fprintf(this->temperatureFile, "%f %f \n",t, vsquared);
 }
 
 void StatisticsSampler::calculateEnergy(double t) {
 	if(!this->energy) return;
 	int N = this->system->N;
-	double E = 0;
+	double E = 0, Ek=0,Ep=0, Ek_temp, Ep_temp;
 
 	Atom **atoms = this->system->atoms;
 	double vmax = 0;
 	for(int n=0;n<N;n++) {
-		E += 0.5*atoms[n]->mass*norm(atoms[n]->v,1);
+		Ek_temp = 0.5*atoms[n]->mass*dot(atoms[n]->v,atoms[n]->v);
+		Ep_temp = atoms[n]->potential_energy;
+		Ek += Ek_temp;
+		Ep += Ep_temp;
+		E += Ek_temp + Ep_temp;
 	}
 
-	*this->energyFile << t << " " << E << endl;
+	fprintf(this->energyFile, "%f %f %f %f \n",t,Ek,Ep,E);
 }
 
 void StatisticsSampler::calculatePressure(double t) {
@@ -82,7 +85,7 @@ void StatisticsSampler::calculateVelocities(double t) {
 		atom = atoms[n];
 		// vsq = norm(atom->v,2);
 
-		fprintf(this->velocityFile, "%f %f %f \n",atom->v(0),atom->v(1),atom->v(2));
+		fprintf(this->velocityFile, "%f %f %f %f \n",t, atom->v(0),atom->v(1),atom->v(2));
 	}
 
 }

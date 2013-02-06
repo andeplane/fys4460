@@ -27,6 +27,8 @@ void System::initialize() {
     initPositions();
     initVelocities();
     init_cells();
+    sort_cells();
+    calculateAccelerations();
 }
 
 void System::init_cells() {
@@ -34,9 +36,16 @@ void System::init_cells() {
         for(int j=0;j<cells_y;j++) {
             for(int i=0;i<cells_x;i++) {
                 Cell c;
+                c.i = i;
+                c.j = j;
+                c.k = k;
                 cells.push_back(c);
             }
         }
+    }
+
+    for(int i=0;i<cells.size();i++) {
+        cells[i].find_neighbours(cells_x,cells_y,cells_z, this);
     }
 }
 

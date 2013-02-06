@@ -14,7 +14,7 @@ public:
 	double potential_energy;
 	vec r;
 	vec r_initial; // Initial position of the atom. This will be changed while going through the boundary
-	vec temp_vector; // Used to temporarily save vectors
+
 	vec v;
 	vec a;
 	vec F;
@@ -25,7 +25,7 @@ public:
     Atom *prev;
 
 	Atom(System *system);
-	void addR(vec dr);
+    void addR(const vec dr);
 	vec distanceToAtom(Atom *atom);
 	double squaredDistanceFromInitialPosition();
 };

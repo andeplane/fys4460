@@ -1,4 +1,4 @@
-#define VERLET_LISTS
+// #define VERLET_LISTS
 // #define RESCALE_VELOCITIES
 
 #include <iostream>
@@ -23,8 +23,6 @@ System::System(int N_, double T_, double rho_) {
     initialize();
 }
 
-double maxF = 0;
-
 void System::calculateAccelerations() {
     P = rho*T;
     double volume = pow(L,3.0);
@@ -35,63 +33,16 @@ void System::calculateAccelerations() {
         atoms[n]->potential_energy = 0;
 	}
 
-	vec dr = zeros<vec>(3,1);
-	double dr_2;
-	double dr_6;
-	double dr_12;
-
-	Atom *atom0;
-	Atom *atom1;
-	double f,potential_energy;
-	
-	double dP = 0;
-	
-    for(int i=0;i<N-1;i++) {
-        atom0 = atoms[i];
-
-#ifdef VERLET_LISTS
-		for(int j=0;j<atom0->interactingParticles;j++) {
-            atom1 = atoms[atom0->interactingParticlesList[j]];
-#else
-        for(int j=i+1;j<N;j++) {
-            atom1 = atoms[j];
-#endif
-			
-			dr = atom0->distanceToAtom(atom1);
-
-			dr_2 = dot(dr,dr);
-			
-			dr_6 = pow(dr_2,3);
-			dr_12 = pow(dr_6,2);
-			
-			f = 24*(2.0/dr_12-1.0/dr_6)/dr_2;
-			dP += f*norm(dr,2);
-
-			potential_energy = 2*(1.0/dr_12 - 1.0/dr_6);
-
-			atom0->a += f*dr;
-			atom0->potential_energy += potential_energy;
-			atom1->a -= f*dr;
-			atom1->potential_energy += potential_energy;
-		}
-	}
-    P += 1.0/(3*volume)*dP;
-
-	vec sumF = zeros<vec>(3,1);
-    for(int n=0;n<N;n++) {
-        sumF += atoms[n]->a;
-	}
+    for(int i=0;i<cells.size();i++) {
+        P += 1.0/(3*volume)*cells[i].calculate_forces();
+    }
 }
 
 void System::step(double dt) {
-#ifdef VERLET_LISTS
-    updateVerletList();
-#endif
+    sort_cells();
+    // time_t t0 = clock();
+    // cout << "Time spent on sorting: " << ((double)clock()-t0)/CLOCKS_PER_SEC << endl;
 
-	t += dt;
-	steps++;
-
-    calculateAccelerations();
     for(int n=0;n<N;n++) {
         atoms[n]->v += 0.5*atoms[n]->a*dt;
         atoms[n]->addR(atoms[n]->v*dt);
@@ -102,6 +53,9 @@ void System::step(double dt) {
         atoms[n]->v += 0.5*atoms[n]->a*dt;
 	}
 
+    t += dt;
+    steps++;
+
 #ifdef RESCALE_VELOCITIES
 	if(!(steps % 200)) {
         rescaleVelocities();
@@ -109,31 +63,11 @@ void System::step(double dt) {
 #endif
 }
 
-void System::updateVerletList() {
-	if(steps % 50) return;
-
-	Atom *atom0, *atom1;
-	vec dr;
-    for(int n=0;n<N;n++)
-        atoms[n]->interactingParticles = 0;
-
-    for(int i=0;i<N-1;i++) {
-        atom0 = atoms[i];
-        for(int j=i+1;j<N;j++) {
-            atom1 = atoms[j];
-			dr = atom0->distanceToAtom(atom1);
-
-			if(norm(dr,2) < 3.2) // These will be in contact later
-				atom0->interactingParticlesList[atom0->interactingParticles++] = j;
-		}
-	}
-}
-
 void System::sort_cells() {
     int i,j,k;
     Atom *a;
     for(int i=0;i<cells.size();i++) {
-        cells[i].reset();
+        cells[i].reset_atom_list();
     }
 
     for(int n=0;n<N;n++) {

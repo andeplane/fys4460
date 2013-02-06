@@ -7,8 +7,10 @@ class Cell;
 #include "Atom.h"
 #include <random.h>
 #include <Cell.h>
+#include <armadillo>
 
 using namespace std;
+using namespace arma;
 
 class System {
 private:
@@ -16,7 +18,6 @@ private:
     void init_cells();
 	void initPositions();
 	void initVelocities();
-	void updateVerletList();
 	void rescaleVelocities();
 	void calculateAccelerations();
 	

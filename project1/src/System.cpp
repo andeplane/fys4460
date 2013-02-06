@@ -8,6 +8,7 @@
 #include "Atom.h"
 #include "System.h"
 #include "initialConditions.cpp"
+#include <inlines.h>
 
 using namespace arma;
 using namespace std;
@@ -126,6 +127,22 @@ void System::updateVerletList() {
 				atom0->interactingParticlesList[atom0->interactingParticles++] = j;
 		}
 	}
+}
+
+void System::sort_cells() {
+    int i,j,k;
+    Atom *a;
+    for(int i=0;i<cells.size();i++) {
+        cells[i].reset();
+    }
+
+    for(int n=0;n<N;n++) {
+        a = atoms[n];
+        i = a->r(0)/L;
+        j = a->r(1)/L;
+        k = a->r(2)/L;
+        cells[calculate_cell_index(i,j,k,cells_x,cells_y,cells_z)].add_atom(a);
+    }
 }
 
 void System::printPositionsToFile(ofstream *file) {

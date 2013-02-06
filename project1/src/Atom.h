@@ -21,6 +21,8 @@ public:
 	System *system;
 	int interactingParticles;
 	int *interactingParticlesList;
+    Atom *next;
+    Atom *prev;
 
 	Atom(System *system);
 	void addR(vec dr);

@@ -8,6 +8,7 @@
 #include "Atom.h"
 #include "System.h"
 #include "StatisticsSampler.h"
+#include <LinkedList.h>
 
 using namespace arma;
 using namespace std;

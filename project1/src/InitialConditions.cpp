@@ -1,7 +1,6 @@
 #include <System.h>
 // #define UNIFORMVELOCITY
 
-long idum = -3;
 double vmax = 8;
 
 
@@ -9,6 +8,9 @@ void System::initialize() {
     rnd = new Random(-1);
 
     L = pow(N/rho,1.0/3);
+    cells_x = L/3;
+    cells_y = L/3;
+    cells_z = L/3;
 
 	printf("Initializing system with properties:\n");
     printf("T=%.2f\n",T);
@@ -24,6 +26,18 @@ void System::initialize() {
 
     initPositions();
     initVelocities();
+    init_cells();
+}
+
+void System::init_cells() {
+    for(int k=0;k<cells_z;k++) {
+        for(int j=0;j<cells_y;j++) {
+            for(int i=0;i<cells_x;i++) {
+                Cell c;
+                cells.push_back(c);
+            }
+        }
+    }
 }
 
 void System::initPositions() {
@@ -32,12 +46,6 @@ void System::initPositions() {
 	int M=1;
     while(4*M*M*M < N) ++M;
     double a = L/M;
-	
-    /*
-	double xCell[4] = {0.25, 0.75, 0.75, 0.25};
-	double yCell[4] = {0.25, 0.75, 0.25, 0.75};
-	double zCell[4] = {0.25, 0.25, 0.75, 0.75};
-    */
 
     double xCell[4] = {0, 0.5, 0.5, 0};
     double yCell[4] = {0, 0.5, 0, 0.5};

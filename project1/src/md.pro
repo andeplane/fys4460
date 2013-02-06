@@ -9,7 +9,9 @@ SOURCES += \
     md.cpp \
     InitialConditions.cpp \
     Atom.cpp \
-    random.cpp
+    random.cpp \
+    Cell.cpp \
+    LinkedList.cpp
 
 HEADERS += \
     System.h \
@@ -17,7 +19,9 @@ HEADERS += \
     inlines.h \
     initialConditions.h \
     Atom.h \
-    random.h
+    random.h \
+    Cell.h \
+    LinkedList.h
 
 mac {
     LIBS   += -larmadillo

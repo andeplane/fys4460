@@ -1,10 +1,13 @@
 #include "Atom.h"
 #include <iostream>
 #include <math.h>
+#include <cstddef>
 
 using namespace std;
 
 Atom::Atom(System *system_) {
+    next = NULL;
+    prev = NULL;
     r = zeros<vec> (3,1);
     v = zeros<vec> (3,1);
     F = zeros<vec> (3,1);

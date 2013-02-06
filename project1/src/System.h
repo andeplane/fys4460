@@ -4,6 +4,7 @@ class Atom;
 
 #include <fstream>
 #include "Atom.h"
+#include <random.h>
 
 using namespace std;
 
@@ -17,6 +18,7 @@ private:
 	void calculateAccelerations();
 	
 	double gasdev();
+
 public:
 	Atom **atoms;
 	int N; 		// Number of atoms
@@ -24,11 +26,8 @@ public:
 	double rho; // Density
 	double L;   // Length
 	double P;	// Pressure
-	
-	// int getNumberOfAtoms();
-	// double getTemperature();
-	// double getDensity();
-	// double getLength();
+    Random *rnd;
+
 	void printPositionsToFile(ofstream *file);
 
 	void step(double dt);

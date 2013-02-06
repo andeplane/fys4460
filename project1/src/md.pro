@@ -7,17 +7,17 @@ SOURCES += \
     System.cpp \
     StatisticsSampler.cpp \
     md.cpp \
-    lib.cpp \
     InitialConditions.cpp \
-    Atom.cpp
+    Atom.cpp \
+    random.cpp
 
 HEADERS += \
     System.h \
     StatisticsSampler.h \
-    lib.h \
     inlines.h \
     initialConditions.h \
-    Atom.h
+    Atom.h \
+    random.h
 
 mac {
     LIBS   += -larmadillo

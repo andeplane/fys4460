@@ -1,6 +1,4 @@
-#ifndef INITIALCONDITIONS_CPP
-#define INITIALCONDITIONS_CPP
-
+#include <System.h>
 // #define UNIFORMVELOCITY
 
 long idum = -3;
@@ -8,6 +6,8 @@ double vmax = 8;
 
 
 void System::initialize() {
+    rnd = new Random(-1);
+
     L = pow(N/rho,1.0/3);
 
 	printf("Initializing system with properties:\n");
@@ -50,7 +50,6 @@ void System::initPositions() {
                         atoms[n]->r_initial = atoms[n]->r;
 						
                         atoms[n]->type = k>0; // For visualization
-
 						++n;
 					}
 				}
@@ -66,8 +65,9 @@ double System::gasdev() {
 	double fac, rsq, v1, v2;
 	if(!available) {
 		do {
-			v1 = 2.0*ran0(&idum) - 1.0;
-			v2 = 2.0*ran0(&idum) - 1.0;
+
+            v1 = 2.0*rnd->nextDouble() - 1.0;
+            v2 = 2.0*rnd->nextDouble() - 1.0;
 			rsq = v1*v1+v2*v2;
 		} while (rsq >= 1.0 || rsq == 0.0);
 
@@ -123,4 +123,3 @@ void System::rescaleVelocities() {
         atoms[n]->v *= lambda;
 	printf("done\n");
 }
-#endif

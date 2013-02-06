@@ -7,7 +7,6 @@
 #include <fstream>
 #include "Atom.h"
 #include "System.h"
-#include "lib.h"
 #include "initialConditions.cpp"
 
 using namespace arma;

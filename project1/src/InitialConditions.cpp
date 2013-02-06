@@ -33,9 +33,15 @@ void System::initPositions() {
     while(4*M*M*M < N) ++M;
     double a = L/M;
 	
+    /*
 	double xCell[4] = {0.25, 0.75, 0.75, 0.25};
 	double yCell[4] = {0.25, 0.75, 0.25, 0.75};
 	double zCell[4] = {0.25, 0.25, 0.75, 0.75};
+    */
+
+    double xCell[4] = {0, 0.5, 0.5, 0};
+    double yCell[4] = {0, 0.5, 0, 0.5};
+    double zCell[4] = {0, 0, 0.5, 0.5};
 	
 	int n = 0;
 	for(int x = 0; x < M; x++) {
@@ -64,12 +70,11 @@ double System::gasdev() {
 	static double gset;
 	double fac, rsq, v1, v2;
 	if(!available) {
-		do {
-
+        do {
             v1 = 2.0*rnd->nextDouble() - 1.0;
             v2 = 2.0*rnd->nextDouble() - 1.0;
 			rsq = v1*v1+v2*v2;
-		} while (rsq >= 1.0 || rsq == 0.0);
+        } while(rsq>= 1.0 || rsq == 0.0);
 
 		fac = sqrt(-2.0*log(rsq)/rsq);
 		gset = v1*fac;
@@ -94,10 +99,20 @@ void System::initVelocities() {
 	}
 	printf("done\n");
 #else
+
 	printf("Creating maxwellian velocities...");
+
+    for(int n=0; n<N; n++ ) {
+        atoms[n]->v(0) = rnd->nextGauss()*sqrt(2.0/2*T);
+        atoms[n]->v(1) = rnd->nextGauss()*sqrt(2.0/2*T);
+        atoms[n]->v(2) = rnd->nextGauss()*sqrt(2.0/2*T);
+    }
+
+    /*
     for(int n=0;n<N;n++)
 		for(int i=0;i<3;i++) 
             atoms[n]->v(i) = gasdev();
+    */
 
 	vec vCM = zeros<vec>(3,1);
 	

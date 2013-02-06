@@ -16,7 +16,6 @@ HEADERS += \
     System.h \
     StatisticsSampler.h \
     inlines.h \
-    initialConditions.h \
     Atom.h \
     random.h \
     Cell.h

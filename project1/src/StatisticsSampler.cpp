@@ -51,7 +51,6 @@ void StatisticsSampler::calculateEnergy(double t) {
 	double E = 0, Ek=0,Ep=0, Ek_temp, Ep_temp;
 
     Atom **atoms = system->atoms;
-	double vmax = 0;
 	for(int n=0;n<N;n++) {
 		Ek_temp = 0.5*atoms[n]->mass*dot(atoms[n]->v,atoms[n]->v);
 		Ep_temp = atoms[n]->potential_energy;

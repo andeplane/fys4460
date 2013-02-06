@@ -9,10 +9,10 @@ Cell::Cell()
 }
 
 double Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1) {
+    cout << "Workn start"  << endl;
     double dr_2, dr_6, dr_12, f, potential_energy;
-
     dr = atom0->distanceToAtom(atom1);
-
+    cout << "Workn temp"  << endl;
     dr_2 = dot(dr,dr);
 
     dr_6 = pow(dr_2,3);
@@ -26,6 +26,8 @@ double Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1) {
     atom0->potential_energy += potential_energy;
     atom1->a -= f*dr;
     atom1->potential_energy += potential_energy;
+
+    cout << "DONE"  << endl;
     return f*norm(dr,2);
 }
 
@@ -33,7 +35,6 @@ double Cell::calculate_forces() {
     Cell *c;
     Atom *atom0, *atom1;
     double dP = 0;
-
     for(int i=0;i<cells.size();i++) {
         c = cells[i];
         if(c->forces_is_calculated) continue;
@@ -41,7 +42,6 @@ double Cell::calculate_forces() {
         while(atom0 != NULL) {
             atom1 = first_atom;
             while(atom1 != NULL) {
-
                 dP += calculate_force_between_atoms(atom0, atom1);
                 atom1 = atom1->next;
             }

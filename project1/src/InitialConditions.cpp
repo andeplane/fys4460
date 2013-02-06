@@ -28,6 +28,7 @@ void System::initialize() {
     initVelocities();
     init_cells();
     sort_cells();
+
     calculateAccelerations();
 }
 

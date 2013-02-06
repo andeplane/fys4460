@@ -37,6 +37,7 @@ void Atom::addR(const vec dr) {
 
 vec Atom::distanceToAtom(Atom *atom) {
     vec dr = r-atom->r;
+
     double L = system->L;
 
 	for(int i=0;i<3;i++) {

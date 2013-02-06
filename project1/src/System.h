@@ -4,7 +4,7 @@ class Atom;
 class Cell;
 
 #include <fstream>
-#include "Atom.h"
+#include <Atom.h>
 #include <random.h>
 #include <Cell.h>
 #include <armadillo>

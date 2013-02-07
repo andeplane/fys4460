@@ -1,5 +1,4 @@
 // #define RESCALE_VELOCITIES
-#define FAST_COLLISIONS
 
 #include <iostream>
 #include "math.h"
@@ -26,22 +25,21 @@ System::System(int rank_, int nodes_, int number_of_FCC_cells_, double T_) {
 }
 
 void System::calculateAccelerations() {
-    if(rank == 0) {
-        cout << " I am master, waiting for data from slaves..." << endl;
+    P = 0;
+
+    if(rank==0) {
+        // Reset all atom accelerations
+        for(int n=0;n<N;n++) {
+            atoms[n]->a.zeros();
+            atoms[n]->potential_energy = 0;
+        }
+        send_particles_to_slaves();
         receive_particles_back_from_slaves();
         return;
     }
 
-    P = N/V*T;
-    double volume = pow(L,3.0);
+    receive_particles_from_master();
 
-    for(int n=0;n<N;n++) {
-        atoms[n]->F.zeros();
-        atoms[n]->a.zeros();
-        atoms[n]->potential_energy = 0;
-	}
-
-#ifdef FAST_COLLISIONS
     ThreadNode &node = thread_control->nodes[rank];
 
     for(set<int>::iterator it=node.connected_cells.begin(); it!= node.connected_cells.end();it++) {
@@ -51,41 +49,34 @@ void System::calculateAccelerations() {
 
     for(set<int>::iterator it=node.owned_cells.begin(); it!= node.owned_cells.end();it++) {
         int cell_index = *it;
-        P += 1.0/(3*volume)*cells[cell_index]->calculate_forces(this);
+        P += 1.0/(3*V)*cells[cell_index]->calculate_forces(this);
     }
 
-#else
-    Atom *atom0, *atom1;
-    for(int i=0;i<N;i++) {
-        atom0 = atoms[i];
-        for(int j=i+1;j<N;j++) {
-            atom1 = atoms[j];
-
-            P += calculate_force_between_atoms(atom0,atom1);
-        }
-    }
-#endif
     send_particles_back_to_master();
 }
 
 void System::step(double dt) {
-#ifdef FAST_COLLISIONS
-    sort_cells();
-#endif
+    if(rank == 0) {
+        sort_cells();
+    }
 
     // time_t t0 = clock();
     // cout << "Time spent on sorting: " << ((double)clock()-t0)/CLOCKS_PER_SEC << endl;
-
-    for(int n=0;n<N;n++) {
-        atoms[n]->v += 0.5*atoms[n]->a*dt;
-        atoms[n]->addR(atoms[n]->v*dt);
-	}
+    if(rank == 0) {
+        cout << "Moving particles..." << endl;
+        for(int n=0;n<N;n++) {
+            atoms[n]->v += 0.5*atoms[n]->a*dt;
+            atoms[n]->addR(atoms[n]->v*dt);
+        }
+        cout << "MOVED!!" << endl;
+    }
 
     calculateAccelerations();
-
-    for(int n=0;n<N;n++) {
-        atoms[n]->v += 0.5*atoms[n]->a*dt;
-	}
+    if(rank == 0) {
+        for(int n=0;n<N;n++) {
+            atoms[n]->v += 0.5*atoms[n]->a*dt;
+        }
+    }
 
     t += dt;
     steps++;
@@ -160,11 +151,12 @@ void System::send_particles_to_slaves() {
         particles = 0;
     }
 
+    delete positions_and_velocities;
+    delete indices;
+
 }
 
 void System::receive_particles_from_master() {
-    atoms.clear();
-
     MPI_Status status;
 
     int particles = 0;
@@ -174,9 +166,15 @@ void System::receive_particles_from_master() {
     int *indices = new int[particles];
     MPI_Recv(indices,particles,MPI_INT,0,100,MPI_COMM_WORLD,&status);
     MPI_Recv(positions_and_velocities,6*particles,MPI_DOUBLE,0,100,MPI_COMM_WORLD,&status);
+    Atom *atom;
 
     for(int n=0;n<particles;n++) {
-        Atom *atom = new Atom(this);
+        if(n<N) {
+            atom = atoms[n];
+        } else {
+            atom = new Atom(this);
+        }
+
         atom->r(0) = positions_and_velocities[6*n + 0];
         atom->r(1) = positions_and_velocities[6*n + 1];
         atom->r(2) = positions_and_velocities[6*n + 2];
@@ -185,13 +183,17 @@ void System::receive_particles_from_master() {
         atom->v(1) = positions_and_velocities[6*n + 4];
         atom->v(2) = positions_and_velocities[6*n + 5];
         atom->index = indices[n];
-
-        atoms.push_back(atom);
+        if(n>=N) {
+            atoms.push_back(atom);
+            N++;
+        }
     }
 
-    N = atoms.size();
-    cout << "I am " << rank << " with " << N << "particles." << endl;
+    N = particles;
     sort_cells();
+
+    delete positions_and_velocities;
+    delete indices;
 }
 
 void System::receive_particles_back_from_slaves() {
@@ -199,8 +201,10 @@ void System::receive_particles_back_from_slaves() {
 
     for(int i=1;i<nodes;i++) {
         int particles = 0;
-
+        double dP;
         MPI_Recv(&particles,1,MPI_INT,i,100,MPI_COMM_WORLD,&status);
+        MPI_Recv(&dP,1,MPI_DOUBLE,i,100,MPI_COMM_WORLD,&status);
+        P += dP;
 
         int *indices = new int[particles];
         double *accelerations = new double[3*particles];
@@ -208,11 +212,16 @@ void System::receive_particles_back_from_slaves() {
         MPI_Recv(indices,particles,MPI_INT,i,100,MPI_COMM_WORLD,&status);
         MPI_Recv(accelerations,3*particles,MPI_DOUBLE,i,100,MPI_COMM_WORLD,&status);
         for(int j=0;j<particles;j++) {
-            atoms[indices[j]]->a(0) = accelerations[3*j+0];
-            atoms[indices[j]]->a(1) = accelerations[3*j+1];
-            atoms[indices[j]]->a(2) = accelerations[3*j+2];
+            atoms[indices[j]]->a(0) += accelerations[3*j+0];
+            atoms[indices[j]]->a(1) += accelerations[3*j+1];
+            atoms[indices[j]]->a(2) += accelerations[3*j+2];
         }
+
+        delete accelerations;
+        delete indices;
     }
+
+    P += N/V*T;
 }
 
 void System::send_particles_back_to_master() {
@@ -227,6 +236,10 @@ void System::send_particles_back_to_master() {
     }
 
     MPI_Send(&N,1,MPI_INT,0,100,MPI_COMM_WORLD);
+    MPI_Send(&P,1,MPI_DOUBLE,0,100,MPI_COMM_WORLD);
     MPI_Send(indices,N,MPI_INT,0,100,MPI_COMM_WORLD);
     MPI_Send(accelerations,3*N,MPI_DOUBLE,0,100,MPI_COMM_WORLD);
+
+    delete accelerations;
+    delete indices;
 }

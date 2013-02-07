@@ -13,12 +13,15 @@ Atom::Atom(System *system_) {
     index2 = 0;
     r = zeros<vec> (3,1);
     v = zeros<vec> (3,1);
-    F = zeros<vec> (3,1);
     a = zeros<vec> (3,1);
 
     mass = 1; // 39.948;         // MD units
     type = 0;
     system = system_;
+}
+
+Atom::~Atom() {
+
 }
 
 void Atom::addR(const vec& dr) {

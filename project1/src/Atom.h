@@ -17,7 +17,6 @@ public:
 
 	vec v;
 	vec a;
-	vec F;
     vec dr;
     bool initialized;
     int index;
@@ -27,7 +26,8 @@ public:
     Atom *next;
     Atom *prev;
 
-	Atom(System *system);
+    Atom(System *system);
+    ~Atom();
     void addR(const vec &dr);
 	vec distanceToAtom(Atom *atom);
 	double squaredDistanceFromInitialPosition();

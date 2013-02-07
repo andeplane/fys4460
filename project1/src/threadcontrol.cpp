@@ -19,7 +19,6 @@ void ThreadControl::setup(int nodes_, int cells_x, int cells_y, int cells_z, vec
     int cell_rows_so_far = 0;
     int cell_index;
     int max_node_index = nodes_ - 1;
-    Cell *cell;
 
     for(int k=0;k<cells_z;k++) {
         cell_rows_so_far++;
@@ -31,7 +30,6 @@ void ThreadControl::setup(int nodes_, int cells_x, int cells_y, int cells_z, vec
         }
 
         if(cell_rows_so_far >= cell_rows_per_node && current_node < max_node_index) {
-            cout <<
             current_node++;
             cell_rows_so_far = 0;
         }

@@ -7,12 +7,10 @@ double vmax = 8;
 
 void System::initialize() {
     rnd = new Random(-rank - 1);
+    N = 0;
+
     if(rank == 0) {
         init_atoms();
-        printf("Initializing system with properties:\n");
-        printf("T=%.2f\n",T);
-        printf("L=%.2f\n",L);
-        printf("Created %d atoms...",N);
     }
 
     // Send info about system size to all nodes
@@ -31,10 +29,14 @@ void System::initialize() {
     thread_control->setup(nodes,cells_x,cells_y,cells_z,cells);
 
     if(rank==0) {
-        send_particles_to_slaves();
-    }
-    else {
-        receive_particles_from_master();
+        printf("Initializing system...\n");
+        printf("T=%.2f\n",T);
+        printf("L=%.2f\n",L);
+        printf("%d atoms",N);
+        printf("%d cells",cells.size());
+        printf("%d cells per dim",cells_z);
+
+        sort_cells();
     }
 
     calculateAccelerations();
@@ -68,7 +70,7 @@ void System::init_atoms() {
     double xCell[4] = {0, 0.5, 0.5, 0};
     double yCell[4] = {0, 0.5, 0, 0.5};
     double zCell[4] = {0, 0, 0.5, 0.5};
-    vec zero_vec = zeros<vec>(3,1);
+
     double max_coord = 0;
 
 	int n = 0;

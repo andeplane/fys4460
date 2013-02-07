@@ -9,7 +9,8 @@ SOURCES += \
     InitialConditions.cpp \
     Atom.cpp \
     random.cpp \
-    Cell.cpp
+    Cell.cpp \
+    thermostat.cpp
 
 HEADERS += \
     System.h \
@@ -17,7 +18,20 @@ HEADERS += \
     inlines.h \
     Atom.h \
     random.h \
-    Cell.h
+    Cell.h \
+    thermostat.h
+
+# MPI Settings
+QMAKE_CXX = mpicxx
+QMAKE_CXX_RELEASE = $$QMAKE_CXX
+QMAKE_CXX_DEBUG = $$QMAKE_CXX
+QMAKE_LINK = $$QMAKE_CXX
+QMAKE_CC = mpicc
+
+QMAKE_CFLAGS = $$system(mpicc --showme:compile)
+QMAKE_LFLAGS = $$system(mpicxx --showme:link)
+QMAKE_CXXFLAGS = $$system(mpicxx --showme:compile) -DMPICH_IGNORE_CXX_SEEK
+QMAKE_CXXFLAGS_RELEASE = $$QMAKE_CXXFLAGS
 
 mac {
     CONFIG -= app_bundle

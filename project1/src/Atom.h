@@ -24,8 +24,6 @@ public:
     int index2;
 
 	System *system;
-	int interactingParticles;
-	int *interactingParticlesList;
     Atom *next;
     Atom *prev;
 

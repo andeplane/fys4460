@@ -33,15 +33,15 @@ void StatisticsSampler::sample(double t) {
 void StatisticsSampler::calculateTemperature(double t) {
     if(!temperature) return;
     int N = system->N;
-	double vsquared = 0;
+    double T = 0;
 
 	for(int n=0;n<N;n++) {
-        vsquared += norm(system->atoms[n]->v,2);
+        T += dot(system->atoms[n]->v,system->atoms[n]->v);
 	}
 
-	vsquared/=(3*(N-1));
+    T/=3*N;
 
-    fprintf(temperatureFile, "%f %f \n",t, vsquared);
+    fprintf(temperatureFile, "%f %f \n",t, T);
 }
 
 void StatisticsSampler::calculateEnergy(double t) {

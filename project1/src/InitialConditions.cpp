@@ -144,10 +144,12 @@ void System::initVelocities() {
 
 	printf("Creating maxwellian velocities...");
 
+    double k = 1.0;
+
     for(int n=0; n<N; n++ ) {
-        atoms[n]->v(0) = rnd->nextGauss()*sqrt(2.0/2*T);
-        atoms[n]->v(1) = rnd->nextGauss()*sqrt(2.0/2*T);
-        atoms[n]->v(2) = rnd->nextGauss()*sqrt(2.0/2*T);
+        atoms[n]->v(0) = rnd->nextGauss()*sqrt(k*T);
+        atoms[n]->v(1) = rnd->nextGauss()*sqrt(k*T);
+        atoms[n]->v(2) = rnd->nextGauss()*sqrt(k*T);
     }
 
     /*
@@ -155,6 +157,13 @@ void System::initVelocities() {
 		for(int i=0;i<3;i++) 
             atoms[n]->v(i) = gasdev();
     */
+    double temp = 0;
+
+    for(int n=0;n<N;n++) {
+        temp += dot(atoms[n]->v,atoms[n]->v);
+    }
+
+    cout << "Temperature: " << temp/(3*N) << endl;
 
 	vec vCM = zeros<vec>(3,1);
 	

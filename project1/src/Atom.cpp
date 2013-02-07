@@ -19,9 +19,6 @@ Atom::Atom(System *system_) {
     mass = 1; // 39.948;         // MD units
     type = 0;
     system = system_;
-
-    interactingParticles = 0;
-    interactingParticlesList = new int[system->N];
 }
 
 void Atom::addR(const vec& dr) {

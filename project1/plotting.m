@@ -2,11 +2,11 @@ function plotting
 clear all;
 close all;
 
-energy = dlmread('build-debug/energy.dat');
+energy = dlmread('build/energy.dat');
 
-temperature = dlmread('build-debug/temperature.dat');
-pressure = dlmread('build-debug/pressure.dat');
-diffusion = dlmread('build-debug/diffusion.dat');
+temperature = dlmread('build/temperature.dat');
+pressure = dlmread('build/pressure.dat');
+diffusion = dlmread('build/diffusion.dat');
 
 t = energy(:,1);
 Ek = energy(:,2);

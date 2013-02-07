@@ -2,13 +2,16 @@
 
 class Atom;
 class Cell;
+class ThreadControl;
 
 #include <fstream>
 #include <Atom.h>
 #include <random.h>
+#include <threadcontrol.h>
 #include <Cell.h>
 #include <armadillo>
 #include <vector>
+
 
 using namespace std;
 using namespace arma;
@@ -37,9 +40,12 @@ public:
     int rank;
     int nodes;
     ofstream *file;
+    ThreadControl *thread_control;
+
 
     Random *rnd;
     vector<Cell*> cells;
+    vector<int> cell_indices;
 
 	void printPositionsToFile(ofstream *file);
     void sort_cells();

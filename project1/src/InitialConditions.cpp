@@ -26,15 +26,18 @@ void System::initialize() {
     cell_width = L/cells_x;
 
     init_cells();
+    thread_control = new ThreadControl();
+
+    thread_control->setup(nodes,cells_x,cells_y,cells_z,cells);
 
     if(rank==0) {
         send_particles_to_slaves();
     }
     else {
         receive_particles_from_master();
-        //calculateAccelerations();
-        cout << "I am " << rank << " and I calculated forces." << endl;
     }
+
+    calculateAccelerations();
 }
 
 void System::init_cells() {
@@ -45,6 +48,7 @@ void System::init_cells() {
                 c->i = i;
                 c->j = j;
                 c->k = k;
+                c->index = cells.size();
                 cells.push_back(c);
             }
         }
@@ -85,8 +89,9 @@ void System::init_atoms() {
                     if(atom->r(2) > max_coord) max_coord = atom->r(2);
 
                     atom->type = k>0; // For visualization
+                    atom->index = atoms.size();
+
                     atoms.push_back(atom);
-                    atom->index = atoms.size()-1;
                 }
             }
         }

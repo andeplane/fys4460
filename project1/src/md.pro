@@ -10,7 +10,8 @@ SOURCES += \
     Atom.cpp \
     random.cpp \
     Cell.cpp \
-    thermostat.cpp
+    thermostat.cpp \
+    threadcontrol.cpp
 
 HEADERS += \
     System.h \
@@ -19,7 +20,8 @@ HEADERS += \
     Atom.h \
     random.h \
     Cell.h \
-    thermostat.h
+    thermostat.h \
+    threadcontrol.h
 
 mac {
     CONFIG -= app_bundle

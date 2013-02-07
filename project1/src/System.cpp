@@ -21,10 +21,17 @@ System::System(int rank_, int nodes_, int number_of_FCC_cells_, double T_) {
     T = T_;
     rank = rank_;
     nodes = nodes_;
+
     initialize();
 }
 
 void System::calculateAccelerations() {
+    if(rank == 0) {
+        cout << " I am master, waiting for data from slaves..." << endl;
+        receive_particles_back_from_slaves();
+        return;
+    }
+
     P = N/V*T;
     double volume = pow(L,3.0);
 
@@ -35,12 +42,18 @@ void System::calculateAccelerations() {
 	}
 
 #ifdef FAST_COLLISIONS
-    for(int i=0;i<cells.size();i++)
-        cells[i]->reset();
+    ThreadNode &node = thread_control->nodes[rank];
 
-    for(int i=0;i<cells.size();i++) {
-        P += 1.0/(3*volume)*cells[i]->calculate_forces(this);
+    for(set<int>::iterator it=node.connected_cells.begin(); it!= node.connected_cells.end();it++) {
+        int cell_index = *it;
+        cells[cell_index]->reset();
     }
+
+    for(set<int>::iterator it=node.owned_cells.begin(); it!= node.owned_cells.end();it++) {
+        int cell_index = *it;
+        P += 1.0/(3*volume)*cells[cell_index]->calculate_forces(this);
+    }
+
 #else
     Atom *atom0, *atom1;
     for(int i=0;i<N;i++) {
@@ -52,6 +65,7 @@ void System::calculateAccelerations() {
         }
     }
 #endif
+    send_particles_back_to_master();
 }
 
 void System::step(double dt) {
@@ -114,58 +128,38 @@ void System::printPositionsToFile(ofstream *file) {
 
 void System::send_particles_to_slaves() {
     sort_cells();
-    int cell_rows_per_node = cells_z/(nodes-1);
-    int current_node = 1;
-    int cell_rows_so_far = 0;
-    int cell_index, particles;
-    int max_node_index = nodes - 1;
+
     double *positions_and_velocities = new double[6*N];
     int *indices = new int[N];
-
-    printf("We have %d particles on %d nodes. We have %d cells in z-direction\n",N,nodes-1,cells_z);
+    int particles = 0;
 
     Cell *cell;
-    particles = 0;
 
-    for(int k=0;k<cells_z;k++) {
-        cell_rows_so_far++;
-        for(int i=0;i<cells_x;i++) {
-            for(int j=0;j<cells_y;j++) {
-                cell_index = calculate_cell_index(i,j,k,cells_x,cells_y,cells_z);
-                cell = cells[cell_index];
-                for(int n=0;n<cell->atoms.size();n++) {
-                    positions_and_velocities[particles*6 + 0] = cell->atoms[n]->r(0);
-                    positions_and_velocities[particles*6 + 1] = cell->atoms[n]->r(1);
-                    positions_and_velocities[particles*6 + 2] = cell->atoms[n]->r(2);
+    for(int node_id=1;node_id<nodes;node_id++) {
+        ThreadNode &node = thread_control->nodes[node_id];
+        for(set<int>::iterator it=node.connected_cells.begin(); it!= node.connected_cells.end();it++) {
+            int cell_index = *it;
+            cell = cells[cell_index];
+            for(int n=0;n<cell->atoms.size();n++) {
+                positions_and_velocities[particles*6 + 0] = cell->atoms[n]->r(0);
+                positions_and_velocities[particles*6 + 1] = cell->atoms[n]->r(1);
+                positions_and_velocities[particles*6 + 2] = cell->atoms[n]->r(2);
 
-                    positions_and_velocities[particles*6 + 3] = cell->atoms[n]->v(0);
-                    positions_and_velocities[particles*6 + 4] = cell->atoms[n]->v(1);
-                    positions_and_velocities[particles*6 + 5] = cell->atoms[n]->v(2);
-                    indices[particles] = cell->atoms[n]->index;
+                positions_and_velocities[particles*6 + 3] = cell->atoms[n]->v(0);
+                positions_and_velocities[particles*6 + 4] = cell->atoms[n]->v(1);
+                positions_and_velocities[particles*6 + 5] = cell->atoms[n]->v(2);
+                indices[particles] = cell->atoms[n]->index;
 
-                    particles++;
-                }
+                particles++;
             }
         }
 
-        if(cell_rows_so_far >= cell_rows_per_node && current_node < max_node_index) {
-            // Maximum cell rows for this node, send data
-            MPI_Send(&particles,1,MPI_INT,current_node,100,MPI_COMM_WORLD);
-            MPI_Send(indices,particles,MPI_INT,current_node,100,MPI_COMM_WORLD);
-            MPI_Send(positions_and_velocities,6*particles,MPI_DOUBLE,current_node,100,MPI_COMM_WORLD);
-            current_node++;
-            cell_rows_so_far = 0;
-            particles = 0;
-        }
+        MPI_Send(&particles,1,MPI_INT,node_id,100,MPI_COMM_WORLD);
+        MPI_Send(indices,particles,MPI_INT,node_id,100,MPI_COMM_WORLD);
+        MPI_Send(positions_and_velocities,6*particles,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD);
+        particles = 0;
     }
 
-    if(particles > 0) {
-        // Send the rest
-        MPI_Send(&particles,1,MPI_INT,current_node,100,MPI_COMM_WORLD);
-
-        MPI_Send(indices,particles,MPI_INT,current_node,100,MPI_COMM_WORLD);
-        MPI_Send(positions_and_velocities,6*particles,MPI_DOUBLE,current_node,100,MPI_COMM_WORLD);
-    }
 }
 
 void System::receive_particles_from_master() {
@@ -218,7 +212,6 @@ void System::receive_particles_back_from_slaves() {
             atoms[indices[j]]->a(1) = accelerations[3*j+1];
             atoms[indices[j]]->a(2) = accelerations[3*j+2];
         }
-
     }
 }
 

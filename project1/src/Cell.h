@@ -17,7 +17,7 @@ public:
     int number_of_atoms;
     vector<int> cells;
     vector<Atom*> atoms;
-    int i,j,k;
+    int i,j,k,index;
     bool forces_are_calculated;
     vec dr;
     int initialized;

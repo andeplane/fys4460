@@ -1,5 +1,5 @@
-// #define VERLET_LISTS
 // #define RESCALE_VELOCITIES
+#define FAST_COLLISIONS
 
 #include <iostream>
 #include "math.h"
@@ -16,11 +16,33 @@ using namespace std;
 double t = 0;
 int steps = 0;
 
-System::System(int N_, double T_, double rho_) {
-    N = N_;
+System::System(int number_of_FCC_cells_, double T_, double rho_) {
+    number_of_FCC_cells = number_of_FCC_cells_;
     T = T_;
     rho = rho_;
     initialize();
+}
+
+double calculate_force_between_atoms(Atom *atom0, Atom *atom1) {
+    double dr_2, dr_6, dr_12, f, potential_energy;
+    vec dr;
+
+    dr = atom0->distanceToAtom(atom1);
+    dr_2 = dot(dr,dr);
+
+    dr_6 = pow(dr_2,3);
+    dr_12 = pow(dr_6,2);
+
+    f = 24*(2.0/dr_12-1.0/dr_6)/dr_2;
+
+    potential_energy = 2*(1.0/dr_12 - 1.0/dr_6);
+
+    atom0->a += f*dr;
+    atom0->potential_energy += potential_energy;
+    atom1->a -= f*dr;
+    atom1->potential_energy += potential_energy;
+
+    return f*norm(dr,2);
 }
 
 void System::calculateAccelerations() {
@@ -33,13 +55,31 @@ void System::calculateAccelerations() {
         atoms[n]->potential_energy = 0;
 	}
 
+#ifdef FAST_COLLISIONS
+    for(int i=0;i<cells.size();i++)
+        cells[i]->reset();
+
     for(int i=0;i<cells.size();i++) {
-        P += 1.0/(3*volume)*cells[i].calculate_forces();
+        P += 1.0/(3*volume)*cells[i]->calculate_forces(this);
     }
+#else
+    Atom *atom0, *atom1;
+    for(int i=0;i<N;i++) {
+        atom0 = atoms[i];
+        for(int j=i+1;j<N;j++) {
+            atom1 = atoms[j];
+
+            P += calculate_force_between_atoms(atom0,atom1);
+        }
+    }
+#endif
 }
 
 void System::step(double dt) {
+#ifdef FAST_COLLISIONS
     sort_cells();
+#endif
+
     // time_t t0 = clock();
     // cout << "Time spent on sorting: " << ((double)clock()-t0)/CLOCKS_PER_SEC << endl;
 
@@ -49,6 +89,7 @@ void System::step(double dt) {
 	}
 
     calculateAccelerations();
+
     for(int n=0;n<N;n++) {
         atoms[n]->v += 0.5*atoms[n]->a*dt;
 	}
@@ -67,15 +108,19 @@ void System::sort_cells() {
     int i,j,k;
     Atom *a;
     for(int i=0;i<cells.size();i++) {
-        cells[i].reset_atom_list();
+        cells[i]->reset_atom_list();
     }
 
     for(int n=0;n<N;n++) {
         a = atoms[n];
-        i = a->r(0)/L;
-        j = a->r(1)/L;
-        k = a->r(2)/L;
-        cells[calculate_cell_index(i,j,k,cells_x,cells_y,cells_z)].add_atom(a);
+
+        i = a->r(0)/cell_width;
+        j = a->r(1)/cell_width;
+        k = a->r(2)/cell_width;
+
+        int cell_index = calculate_cell_index(i,j,k,cells_x,cells_y,cells_z);
+
+        cells[cell_index]->add_atom(a);
     }
 }
 

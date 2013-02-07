@@ -14,7 +14,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-    int N = argc > 1 ? atoi(argv[1]) : 2048;
+    int number_of_FCC_cells = argc > 1 ? atoi(argv[1]) : 8;
 	int T = argc > 2 ? atof(argv[2]) : 1;
     double dt = argc > 3 ? atof(argv[3]) : 0.01;
     int timesteps = argc > 4 ? atof(argv[4]) : 100;
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 	// 108, 256, 500, 864, 1372
 	// 2048, 2916, 4000, 5324, 6912
 	// 8788, 10976, 13500
-	System *system = new System(N, T);
+    System *system = new System(number_of_FCC_cells, T);
 
 	StatisticsSampler *sampler = new StatisticsSampler(system);
 
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
 
 		t+=dt;
         system->step(dt);
-        // sampler->sample(t);
+        sampler->sample(t);
 
         system->printPositionsToFile(file);
 	}

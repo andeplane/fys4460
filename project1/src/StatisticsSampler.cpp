@@ -35,9 +35,8 @@ void StatisticsSampler::calculateTemperature(double t) {
     int N = system->N;
 	double vsquared = 0;
 
-    Atom **atoms = system->atoms;
 	for(int n=0;n<N;n++) {
-		vsquared += norm(atoms[n]->v,2);
+        vsquared += norm(system->atoms[n]->v,2);
 	}
 
 	vsquared/=(3*(N-1));
@@ -50,14 +49,15 @@ void StatisticsSampler::calculateEnergy(double t) {
     int N = system->N;
 	double E = 0, Ek=0,Ep=0, Ek_temp, Ep_temp;
 
-    Atom **atoms = system->atoms;
-	for(int n=0;n<N;n++) {
-		Ek_temp = 0.5*atoms[n]->mass*dot(atoms[n]->v,atoms[n]->v);
-		Ep_temp = atoms[n]->potential_energy;
+    for(int n=0;n<N;n++) {
+        Ek_temp = 0.5*system->atoms[n]->mass*dot(system->atoms[n]->v,system->atoms[n]->v);
+        Ep_temp = system->atoms[n]->potential_energy;
 		Ek += Ek_temp;
 		Ep += Ep_temp;
 		E += Ek_temp + Ep_temp;
 	}
+
+    // cout << "energy = " << E << endl;
 
     fprintf(energyFile, "%f %f %f %f \n",t,Ek,Ep,E);
 }
@@ -72,15 +72,13 @@ void StatisticsSampler::calculateVelocities(double t) {
     if(!printVelocities || steps % 50) return;
 
     int N = system->N;
-	
-    Atom **atoms = system->atoms;
-	
+
     if(!steps) fprintf(velocityFile, "%d %d %d\n",N,N,N);
 	Atom *atom;
 	double vsq = 0;
 
 	for(int n=0;n<N;n++) {
-		atom = atoms[n];
+        atom = system->atoms[n];
 		// vsq = norm(atom->v,2);
 
         fprintf(velocityFile, "%f %f %f %f \n",t, atom->v(0),atom->v(1),atom->v(2));
@@ -92,10 +90,10 @@ void StatisticsSampler::calculateDiffusionConstant(double t) {
     if(!diffusionConstant || !t) return;
 
     int N = system->N;
-    Atom **atoms = system->atoms;
+
 	double rsquared = 0;
 	for(int n=0;n<N;n++) {
-		rsquared += atoms[n]->squaredDistanceFromInitialPosition();
+        rsquared += system->atoms[n]->squaredDistanceFromInitialPosition();
 	}
 	rsquared /= N;
 	double D = rsquared/(6*t);

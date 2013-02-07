@@ -8,79 +8,103 @@ void System::initialize() {
     rnd = new Random(-1);
 
     L = pow(N/rho,1.0/3);
-    cells_x = L/3;
-    cells_y = L/3;
-    cells_z = L/3;
 
-	printf("Initializing system with properties:\n");
+    init_atoms();
+    printf("Initializing system with properties:\n");
     printf("T=%.2f\n",T);
     printf("rho=%.2f\n",rho);
     printf("L=%.2f\n",L);
     printf("Creating %d atoms...",N);
 
-    atoms = new Atom*[N];
-    for(int n=0;n<N;n++) {
-        atoms[n] = new Atom(this);
-	}
-	printf("done\n");
+    printf("done\n");
+    cout << "Init cells " << endl;
 
-    initPositions();
-    initVelocities();
+    cells_x = L/3;
+    cells_y = L/3;
+    cells_z = L/3;
+    cell_width = L/cells_x;
+
     init_cells();
+    cout << "Created " << cells_x << " cells in each dimension" << endl;
     sort_cells();
 
     calculateAccelerations();
+
 }
 
 void System::init_cells() {
     for(int k=0;k<cells_z;k++) {
         for(int j=0;j<cells_y;j++) {
             for(int i=0;i<cells_x;i++) {
-                Cell c;
-                c.i = i;
-                c.j = j;
-                c.k = k;
+                Cell *c = new Cell();
+                c->i = i;
+                c->j = j;
+                c->k = k;
                 cells.push_back(c);
             }
         }
     }
 
     for(int i=0;i<cells.size();i++) {
-        cells[i].find_neighbours(cells_x,cells_y,cells_z, this);
+        cells[i]->find_neighbours(cells_x,cells_y,cells_z, this);
     }
+
+    /*
+    Cell c0, *c1;
+    for(int i=0;i<cells.size();i++) {
+        c0 = cells[i];
+        for(int j = 0;j<c0.cells.size();j++) {
+            c1 = c0.cells[j];
+            if(!c1->initialized) {
+                cout << "WAR FUCKING NING" << endl;
+            }
+        }
+    }
+    */
 }
 
-void System::initPositions() {
+void System::init_atoms() {
 	printf("Initializing FCC lattice...");
 
-	int M=1;
-    while(4*M*M*M < N) ++M;
-    double a = L/M;
+    double b = 1.545;
+
 
     double xCell[4] = {0, 0.5, 0.5, 0};
     double yCell[4] = {0, 0.5, 0, 0.5};
     double zCell[4] = {0, 0, 0.5, 0.5};
-	
+    vec zero_vec = zeros<vec>(3,1);
+    double max_coord = 0;
+
 	int n = 0;
-	for(int x = 0; x < M; x++) {
-		for(int y = 0; y < M; y++) {
-			for(int z = 0; z < M; z++) {
+    for(int x = 0; x < number_of_FCC_cells; x++) {
+        for(int y = 0; y < number_of_FCC_cells; y++) {
+            for(int z = 0; z < number_of_FCC_cells; z++) {
 				for(int k = 0; k < 4; k++) {
-					if(n<N) {
-						// Set positions and type
-                        atoms[n]->r(0) = (x+xCell[k]) * a;
-                        atoms[n]->r(1) = (y+yCell[k]) * a;
-                        atoms[n]->r(2) = (z+zCell[k]) * a;
-                        atoms[n]->r_initial = atoms[n]->r;
-						
-                        atoms[n]->type = k>0; // For visualization
-						++n;
-					}
-				}
-			}
-		}
-	}
-	printf("done\n");
+                    Atom *atom = new Atom(this);
+
+                    // Set positions and type
+                    atom->r(0) = (x+xCell[k]) * b;
+                    atom->r(1) = (y+yCell[k]) * b;
+                    atom->r(2) = (z+zCell[k]) * b;
+                    atom->r_initial = atom->r;
+
+                    if(atom->r(0) > max_coord) max_coord = atom->r(0);
+                    if(atom->r(1) > max_coord) max_coord = atom->r(1);
+                    if(atom->r(2) > max_coord) max_coord = atom->r(2);
+
+                    atom->type = k>0; // For visualization
+                    atoms.push_back(atom);
+                    atom->index = atoms.size()-1;
+                }
+            }
+        }
+    }
+
+    L = b*number_of_FCC_cells;
+
+    N = atoms.size();
+    printf("done");
+    initVelocities();
 }
 
 double System::gasdev() {

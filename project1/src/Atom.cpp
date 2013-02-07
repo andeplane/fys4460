@@ -4,10 +4,13 @@
 #include <cstddef>
 
 using namespace std;
+int atom_count = 0;
 
 Atom::Atom(System *system_) {
+    initialized = true;
     next = NULL;
     prev = NULL;
+    index2 = 0;
     r = zeros<vec> (3,1);
     v = zeros<vec> (3,1);
     F = zeros<vec> (3,1);
@@ -21,22 +24,34 @@ Atom::Atom(System *system_) {
     interactingParticlesList = new int[system->N];
 }
 
-void Atom::addR(const vec dr) {
+void Atom::addR(const vec& dr) {
     r += dr;
     double L = system->L;
 
-    if(r(0) > L)  { r(0) -= L; r_initial(0) -= L; }
-    else if(r(0) < 0)  { r(0) += L; r_initial(0) += L; }
+    while(r(0) >= L) {
+        r(0) -= L; r_initial(0) -= L;
+    }
+    while(r(0) < 0) {
+        r(0) += L; r_initial(0) += L;
+    }
 
-    if(r(1) > L)  { r(1) -= L; r_initial(1) -= L; }
-    else if(r(1) < 0)  { r(1) += L; r_initial(1) += L; }
+    while(r(1) >= L)  {
+        r(1) -= L; r_initial(1) -= L;
+    }
+    while(r(1) < 0)  {
+        r(1) += L; r_initial(1) += L;
+    }
 
-    if(r(2) > L)  { r(2) -= L; r_initial(2) -= L; }
-    else if(r(2) < 0)  { r(2) += L; r_initial(2) += L; }
+    while(r(2) >= L)  {
+        r(2) -= L; r_initial(2) -= L;
+    }
+    while(r(2) < 0)  {
+        r(2) += L; r_initial(2) += L;
+    }
 }
 
 vec Atom::distanceToAtom(Atom *atom) {
-    vec dr = r-atom->r;
+    dr = r-atom->r;
 
     double L = system->L;
 

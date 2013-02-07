@@ -1,7 +1,6 @@
 TEMPLATE = app
 CONFIG += console
 CONFIG -= qt
-CONFIG -= app_bundle
 
 SOURCES += \
     System.cpp \
@@ -21,6 +20,7 @@ HEADERS += \
     Cell.h
 
 mac {
+    CONFIG -= app_bundle
     LIBS   += -larmadillo
     INCLUDEPATH +=
     QMAKE_CXXFLAGS +=

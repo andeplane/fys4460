@@ -15,10 +15,12 @@ public:
     Atom *first_atom;
     Atom *last_atom;
     int number_of_atoms;
-    vector<Cell*> cells;
+    vector<int> cells;
+    vector<Atom*> atoms;
     int i,j,k;
-    bool forces_is_calculated;
+    bool forces_are_calculated;
     vec dr;
+    int initialized;
 
     Cell();
     void add_atom(Atom *atom);
@@ -26,6 +28,6 @@ public:
     double calculate_force_between_atoms(Atom *atom0, Atom *atom1);
     void reset();
     void reset_atom_list();
-    double calculate_forces();
+    double calculate_forces(System *system);
     void find_neighbours(const int c_x, const int c_y, const int c_z, System *system);
 };

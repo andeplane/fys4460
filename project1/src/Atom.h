@@ -18,6 +18,11 @@ public:
 	vec v;
 	vec a;
 	vec F;
+    vec dr;
+    bool initialized;
+    int index;
+    int index2;
+
 	System *system;
 	int interactingParticles;
 	int *interactingParticlesList;
@@ -25,7 +30,7 @@ public:
     Atom *prev;
 
 	Atom(System *system);
-    void addR(const vec dr);
+    void addR(const vec &dr);
 	vec distanceToAtom(Atom *atom);
 	double squaredDistanceFromInitialPosition();
 };

@@ -9,47 +9,70 @@
 #include "System.h"
 #include "StatisticsSampler.h"
 #include <thermostat.h>
+#include <mpi.h>
 
 using namespace arma;
 using namespace std;
 
-int main(int argc, char *argv[]) {
+int main(int args, char *argv[]) {
 
-    int number_of_FCC_cells = argc > 1 ? atoi(argv[1]) : 8;
-	int T = argc > 2 ? atof(argv[2]) : 1;
-    double dt = argc > 3 ? atof(argv[3]) : 0.01;
-    int timesteps = argc > 4 ? atof(argv[4]) : 1000;
+
+    int numprocs , my_rank;
+
+    MPI_Init(&args,&argv) ;
+    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+    int number_of_FCC_cells = 24;
+    int T = 1;
+    double dt = 0.01;
+    int timesteps = 1000;
 
 	// 108, 256, 500, 864, 1372
 	// 2048, 2916, 4000, 5324, 6912
 	// 8788, 10976, 13500
-    System *system = new System(number_of_FCC_cells, T);
+    System *system = new System(my_rank,numprocs,number_of_FCC_cells, T);
 
-	StatisticsSampler *sampler = new StatisticsSampler(system);
+    MPI_Finalize();
+    return 0;
 
-	ofstream *file = new ofstream;
-	file->open("pos.xyz");
-	double t = 0;
+    StatisticsSampler *sampler = NULL;
+    ofstream *file = new ofstream;
 
-	system->printPositionsToFile(file);
+    if(my_rank == 0) {
+        sampler = new StatisticsSampler(system);
+
+        file->open("pos.xyz");
+        system->file = file;
+        system->printPositionsToFile(file);
+    }
+
+    double t = 0;
+
     Thermostat thermostat(1.0,dt*20, dt);
 
 	for(int i=0;i<timesteps;i++) {
-		if(!(i%(timesteps/100))) {
+        if(my_rank == 0 && !(i%(timesteps/100))) {
 			printf("%d%%..",(100*i)/timesteps);
 			fflush(stdout);
 		}
 
 		t+=dt;
-        thermostat.apply(system->atoms);
-
         system->step(dt);
-        sampler->sample(t);
 
-        system->printPositionsToFile(file);
+        if(my_rank == 0) {
+            if(timesteps < 500) thermostat.apply(system->atoms);
+            sampler->sample(t);
+
+            system->printPositionsToFile(file);
+        }
+
 	}
 	
-	file->close();
+    if(my_rank == 0) file->close();
+
+
+    MPI_Finalize();
 
 	return 0;
 }

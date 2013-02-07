@@ -29,19 +29,26 @@ public:
 	int N; 		// Number of atoms
     int number_of_FCC_cells;
 	double T; 	// Temperature
-	double rho; // Density
 	double L;   // Length
+    double V;
 	double P;	// Pressure
     int cells_x, cells_y, cells_z;
     double cell_width;
+    int rank;
+    int nodes;
+    ofstream *file;
 
     Random *rnd;
     vector<Cell*> cells;
 
 	void printPositionsToFile(ofstream *file);
     void sort_cells();
+    void send_particles_to_slaves();
+    void receive_particles_from_master();
+    void send_particles_back_to_master();
+    void receive_particles_back_from_slaves();
 
 	void step(double dt);
-    System(int number_of_FCC_cells_=4, double T=1.0, double rho=0.8);
+    System(int rank_, int nodes_, int number_of_FCC_cells_=4, double T_ = 1.0);
 
 };

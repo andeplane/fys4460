@@ -72,7 +72,7 @@ void Cell::find_neighbours(const int c_x, const int c_y, const int c_z, System *
     Cell *c;
     for(int di=-1;di<=1;di++) {
         for(int dj=-1;dj<=1;dj++) {
-            for(int dk=-1;dk<=1;dk++) {
+            for(int dk=0;dk<=1;dk++) {
                 if(di == 0 && dj == 0 && dk == 0) continue;
                 int cell_index = calculate_cell_index((i+di+10*c_x)%c_x,(j+dj+10*c_y)%c_y,((k+dk+10*c_z)%c_z),c_x,c_y,c_z);
 

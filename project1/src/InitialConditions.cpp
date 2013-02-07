@@ -1,23 +1,24 @@
 #include <System.h>
+#include <mpi.h>
 // #define UNIFORMVELOCITY
 
 double vmax = 8;
 
 
 void System::initialize() {
-    rnd = new Random(-1);
+    rnd = new Random(-rank - 1);
+    if(rank == 0) {
+        init_atoms();
+        printf("Initializing system with properties:\n");
+        printf("T=%.2f\n",T);
+        printf("L=%.2f\n",L);
+        printf("Created %d atoms...",N);
+    }
 
-    L = pow(N/rho,1.0/3);
+    // Send info about system size to all nodes
+    MPI_Bcast(&L,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 
-    init_atoms();
-    printf("Initializing system with properties:\n");
-    printf("T=%.2f\n",T);
-    printf("rho=%.2f\n",rho);
-    printf("L=%.2f\n",L);
-    printf("Creating %d atoms...",N);
-
-    printf("done\n");
-    cout << "Init cells " << endl;
+    V = L*L*L;
 
     cells_x = L/3;
     cells_y = L/3;
@@ -25,11 +26,15 @@ void System::initialize() {
     cell_width = L/cells_x;
 
     init_cells();
-    cout << "Created " << cells_x << " cells in each dimension" << endl;
-    sort_cells();
 
-    calculateAccelerations();
-
+    if(rank==0) {
+        send_particles_to_slaves();
+    }
+    else {
+        receive_particles_from_master();
+        //calculateAccelerations();
+        cout << "I am " << rank << " and I calculated forces." << endl;
+    }
 }
 
 void System::init_cells() {
@@ -48,19 +53,6 @@ void System::init_cells() {
     for(int i=0;i<cells.size();i++) {
         cells[i]->find_neighbours(cells_x,cells_y,cells_z, this);
     }
-
-    /*
-    Cell c0, *c1;
-    for(int i=0;i<cells.size();i++) {
-        c0 = cells[i];
-        for(int j = 0;j<c0.cells.size();j++) {
-            c1 = c0.cells[j];
-            if(!c1->initialized) {
-                cout << "WAR FUCKING NING" << endl;
-            }
-        }
-    }
-    */
 }
 
 void System::init_atoms() {

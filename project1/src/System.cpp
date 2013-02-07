@@ -63,12 +63,10 @@ void System::step(double dt) {
     // time_t t0 = clock();
     // cout << "Time spent on sorting: " << ((double)clock()-t0)/CLOCKS_PER_SEC << endl;
     if(rank == 0) {
-        cout << "Moving particles..." << endl;
         for(int n=0;n<N;n++) {
             atoms[n]->v += 0.5*atoms[n]->a*dt;
             atoms[n]->addR(atoms[n]->v*dt);
         }
-        cout << "MOVED!!" << endl;
     }
 
     calculateAccelerations();
@@ -153,10 +151,15 @@ void System::send_particles_to_slaves() {
 
     delete positions_and_velocities;
     delete indices;
-
 }
 
 void System::receive_particles_from_master() {
+    for(int n=0;n<N;n++) {
+        delete atoms[n];
+    }
+
+    atoms.clear();
+
     MPI_Status status;
 
     int particles = 0;
@@ -166,15 +169,9 @@ void System::receive_particles_from_master() {
     int *indices = new int[particles];
     MPI_Recv(indices,particles,MPI_INT,0,100,MPI_COMM_WORLD,&status);
     MPI_Recv(positions_and_velocities,6*particles,MPI_DOUBLE,0,100,MPI_COMM_WORLD,&status);
-    Atom *atom;
 
     for(int n=0;n<particles;n++) {
-        if(n<N) {
-            atom = atoms[n];
-        } else {
-            atom = new Atom(this);
-        }
-
+        Atom *atom = new Atom(this);
         atom->r(0) = positions_and_velocities[6*n + 0];
         atom->r(1) = positions_and_velocities[6*n + 1];
         atom->r(2) = positions_and_velocities[6*n + 2];
@@ -183,13 +180,11 @@ void System::receive_particles_from_master() {
         atom->v(1) = positions_and_velocities[6*n + 4];
         atom->v(2) = positions_and_velocities[6*n + 5];
         atom->index = indices[n];
-        if(n>=N) {
-            atoms.push_back(atom);
-            N++;
-        }
+
+        atoms.push_back(atom);
     }
 
-    N = particles;
+    N = atoms.size();
     sort_cells();
 
     delete positions_and_velocities;

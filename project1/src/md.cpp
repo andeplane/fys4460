@@ -23,7 +23,7 @@ int main(int args, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    int number_of_FCC_cells = 8;
+    int number_of_FCC_cells = 12;
     double T = 1.0;
     double dt = 0.01;
     int timesteps = 1000;
@@ -49,11 +49,6 @@ int main(int args, char *argv[]) {
     Thermostat thermostat(1.0,dt*20, dt);
 
 	for(int i=0;i<timesteps;i++) {
-        if(my_rank == 0 && !(i%(timesteps/100))) {
-			printf("%d%%..",(100*i)/timesteps);
-			fflush(stdout);
-		}
-
 		t+=dt;
         system->step(dt);
 
@@ -61,7 +56,7 @@ int main(int args, char *argv[]) {
             if(timesteps < 500) thermostat.apply(system->atoms);
             sampler->sample(t);
 
-            // system->printPositionsToFile(file);
+            system->printPositionsToFile(file);
         }
 
 	}

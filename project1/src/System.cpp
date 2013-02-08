@@ -49,7 +49,6 @@ void System::calculateAccelerations() {
     P = 0;
 
     if(rank==0) {
-        cout << "Calculating forces..." << endl;
         // Reset all atom accelerations
         for(int n=0;n<N;n++) {
             atoms[n]->a.zeros();
@@ -78,7 +77,6 @@ void System::calculateAccelerations() {
 
     if(rank == 0) {
         receive_particles_back_from_slaves();
-        cout << "done!" << endl;
     } else {
         send_particles_back_to_master();
     }
@@ -86,22 +84,17 @@ void System::calculateAccelerations() {
 }
 
 void System::step(double dt) {
-    cout << "Stepping on " << rank << endl;
     if(rank == 0) {
         sort_cells();
     }
 
-    calculateAccelerations();
-
     // time_t t0 = clock();
     // cout << "Time spent on sorting: " << ((double)clock()-t0)/CLOCKS_PER_SEC << endl;
     if(rank == 0) {
-        cout << "Moving timestep " << steps << "..." << endl;
         for(int n=0;n<N;n++) {
             atoms[n]->v += atoms[n]->a*dt;
             atoms[n]->addR(atoms[n]->v*dt);
         }
-        cout << "done!" << endl;
     }
 
     calculateAccelerations();
@@ -115,7 +108,9 @@ void System::step(double dt) {
 	}
 #endif
 
-    cout << "Done stepping on " << rank << endl;
+    if(rank == 0){
+        cout << "Timestep " << steps << " done." << endl;
+    }
 }
 
 void System::sort_cells() {

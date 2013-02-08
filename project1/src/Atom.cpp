@@ -18,6 +18,7 @@ Atom::Atom(System *system_) {
     mass = 1; // 39.948;         // MD units
     type = 0;
     system = system_;
+    potential_energy = 0;
 }
 
 Atom::~Atom() {

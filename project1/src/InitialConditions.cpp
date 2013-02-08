@@ -35,11 +35,7 @@ void System::initialize() {
         printf("%d atoms",N);
         printf("%d cells",cells.size());
         printf("%d cells per dim",cells_z);
-
-        sort_cells();
     }
-
-    calculateAccelerations();
 }
 
 void System::init_cells() {

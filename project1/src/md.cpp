@@ -23,7 +23,7 @@ int main(int args, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    int number_of_FCC_cells = 48;
+    int number_of_FCC_cells = 8;
     int T = 2.5;
     double dt = 0.01;
     int timesteps = 1000;

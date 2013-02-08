@@ -35,12 +35,10 @@ void System::calculateAccelerations() {
             atoms[n]->potential_energy = 0;
         }
         send_particles_to_slaves();
-        receive_particles_back_from_slaves();
-        cout << "done!" << endl;
-        return;
     }
-
-    receive_particles_from_master();
+    else {
+        receive_particles_from_master();
+    }
 
     ThreadNode &node = thread_control->nodes[rank];
 
@@ -54,7 +52,12 @@ void System::calculateAccelerations() {
         P += 1.0/(3*V)*cells[cell_index]->calculate_forces(this);
     }
 
-    send_particles_back_to_master();
+    if(rank == 0) {
+        receive_particles_back_from_slaves();
+        cout << "done!" << endl;
+    } else {
+        send_particles_back_to_master();
+    }
 }
 
 void System::step(double dt) {

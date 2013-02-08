@@ -57,7 +57,7 @@ void StatisticsSampler::calculateEnergy(double t) {
 		E += Ek_temp + Ep_temp;
 	}
 
-    // cout << "energy = " << E << endl;
+    cout << "energy = " << E << endl;
 
     fprintf(energyFile, "%f %f %f %f \n",t,Ek,Ep,E);
 }

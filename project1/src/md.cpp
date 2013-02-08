@@ -23,15 +23,15 @@ int main(int args, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    int number_of_FCC_cells = 6;
-    double T = 2.5;
+    int number_of_FCC_cells = 8;
+    double T = 1.0;
     double dt = 0.01;
     int timesteps = 1000;
 
 	// 108, 256, 500, 864, 1372
 	// 2048, 2916, 4000, 5324, 6912
 	// 8788, 10976, 13500
-    System *system = new System(my_rank,numprocs,number_of_FCC_cells, T);
+    System *system = new System(my_rank,numprocs,dt,number_of_FCC_cells, T);
 
     StatisticsSampler *sampler = NULL;
     ofstream *file = new ofstream;

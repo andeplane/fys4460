@@ -15,13 +15,13 @@ using namespace std;
 double t = 0;
 int steps = 0;
 
-System::System(int rank_, int nodes_, int number_of_FCC_cells_, double T_) {
+System::System(int rank_, int nodes_, double dt, int number_of_FCC_cells_, double T_) {
     number_of_FCC_cells = number_of_FCC_cells_;
     T = T_;
     rank = rank_;
     nodes = nodes_;
 
-    initialize();
+    initialize(dt);
 }
 
 double calculate_force_between_atoms(Atom *atom0, Atom *atom1) {
@@ -55,15 +55,15 @@ void System::calculateAccelerations() {
             atoms[n]->a.zeros();
             atoms[n]->potential_energy = 0;
         }
-        //send_particles_to_slaves();
+        send_particles_to_slaves();
     }
     else {
-        //receive_particles_from_master();
+        receive_particles_from_master();
     }
 
     ThreadNode &node = thread_control->nodes[rank];
 
-    /*
+
     for(set<int>::iterator it=node.connected_cells.begin(); it!= node.connected_cells.end();it++) {
         int cell_index = *it;
         cells[cell_index]->reset();
@@ -73,31 +73,20 @@ void System::calculateAccelerations() {
         int cell_index = *it;
         P += cells[cell_index]->calculate_forces(this);
     }
-    */
-    for(int c=0;c<cells.size();c++) {
-        // P += cells[c]->calculate_forces(this);
-    }
-
-    for(int n=0;n<N;n++) {
-        Atom *atom0 = atoms[n];
-        for(int m=n+1;m<N;m++) {
-            Atom *atom1 = atoms[m];
-            P += calculate_force_between_atoms(atom0,atom1);
-        }
-    }
 
     P /= 3*V;
-/*
+
     if(rank == 0) {
         receive_particles_back_from_slaves();
         cout << "done!" << endl;
     } else {
         send_particles_back_to_master();
     }
-    */
+
 }
 
 void System::step(double dt) {
+    cout << "Stepping on " << rank << endl;
     if(rank == 0) {
         sort_cells();
     }
@@ -115,6 +104,8 @@ void System::step(double dt) {
         cout << "done!" << endl;
     }
 
+    calculateAccelerations();
+
     t += dt;
     steps++;
 
@@ -123,6 +114,8 @@ void System::step(double dt) {
         rescaleVelocities();
 	}
 #endif
+
+    cout << "Done stepping on " << rank << endl;
 }
 
 void System::sort_cells() {

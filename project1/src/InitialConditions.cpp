@@ -5,7 +5,7 @@
 double vmax = 8;
 
 
-void System::initialize() {
+void System::initialize(double dt) {
     rnd = new Random(-rank - 1);
     N = 0;
 
@@ -35,6 +35,14 @@ void System::initialize() {
         printf("%d atoms",N);
         printf("%d cells",cells.size());
         printf("%d cells per dim",cells_z);
+        sort_cells();
+    }
+
+    if(rank==0) {
+        for(int n=0;n<N;n++) {
+            atoms[n]->v += 0.5*atoms[n]->a*dt;
+            atoms[n]->addR(atoms[n]->v*dt);
+        }
     }
 }
 

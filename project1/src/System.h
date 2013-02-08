@@ -18,7 +18,7 @@ using namespace arma;
 
 class System {
 private:
-	void initialize();
+    void initialize(double dt);
     void init_cells();
     void init_atoms();
 	void initVelocities();
@@ -55,6 +55,6 @@ public:
     void receive_particles_back_from_slaves();
 
 	void step(double dt);
-    System(int rank_, int nodes_, int number_of_FCC_cells_=4, double T_ = 1.0);
+    System(int rank_, int nodes_, double dt, int number_of_FCC_cells_=4, double T_ = 1.0);
 
 };

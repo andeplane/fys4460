@@ -28,7 +28,7 @@ double Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1) {
     atom0->a += f*dr;
     atom0->potential_energy += potential_energy;
     atom1->a -= f*dr;
-    // atom1->potential_energy += potential_energy;
+    atom1->potential_energy += potential_energy;
 
     return f*norm(dr,2);
 }

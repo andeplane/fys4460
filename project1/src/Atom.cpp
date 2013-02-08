@@ -29,29 +29,24 @@ void Atom::addR(const vec& dr) {
     r += dr;
     double L = system->L;
 
-    while(r(0) >= L) {
-        r(0) -= L; r_initial(0) -= L;
-    }
-    while(r(0) < 0) {
-        r(0) += L; r_initial(0) += L;
-    }
+    for(int i=0;i<3;i++) {
+        int factor = r(i) / L;
 
-    while(r(1) >= L)  {
-        r(1) -= L; r_initial(1) -= L;
-    }
-    while(r(1) < 0)  {
-        r(1) += L; r_initial(1) += L;
-    }
+        if(r(i) >= L) {
+            int factor = r(i) / L;
+            r(i) -= factor*L;
+            r_initial(i) -= factor*L;
+        }
 
-    while(r(2) >= L)  {
-        r(2) -= L; r_initial(2) -= L;
-    }
-    while(r(2) < 0)  {
-        r(2) += L; r_initial(2) += L;
+        if(r(i) < 0) {
+            int factor = r(i) / L;
+            r(i) += (factor+1)*L;
+            r_initial(i) = (factor+1)*L;
+        }
     }
 }
 
-vec Atom::distanceToAtom(Atom *atom) {
+vec& Atom::distanceToAtom(Atom *atom) {
     dr = r-atom->r;
 
     double L = system->L;
@@ -67,6 +62,6 @@ vec Atom::distanceToAtom(Atom *atom) {
 }
 
 double Atom::squaredDistanceFromInitialPosition() {
-    vec dr = r - r_initial;
-	return dot(dr,dr);
+    dr = r - r_initial;
+    return dot(dr,dr);
 }

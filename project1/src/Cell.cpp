@@ -83,11 +83,12 @@ void Cell::find_neighbours(const int &c_x, const int &c_y, const int &c_z, Syste
                 dk_p = (k+dk+10*c_z)%c_z;
 
                 int cell_index = calculate_cell_index(di_p,dj_p,dk_p,c_x,c_y,c_z);
+
                 vec displacement = zeros<vec>(3,1);
 
-                displacement(0) = system->L*( (di_p < di+i) - (di_p > di+i) );
-                displacement(1) = system->L*( (dj_p < dj+j) - (dj_p > dj+j) );
-                displacement(2) = system->L*( (dk_p < dk+k) - (dk_p > dk+k) );
+                displacement(0) = system->L*( -(di_p < di+i) + (di_p > di+i) );
+                displacement(1) = system->L*( -(dj_p < dj+j) + (dj_p > dj+j) );
+                displacement(2) = system->L*( -(dk_p < dk+k) + (dk_p > dk+k) );
 
                 cells.push_back(cell_index);
                 displacement_vectors.push_back(displacement);

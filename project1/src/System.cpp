@@ -39,7 +39,6 @@ void System::calculateAccelerations() {
 
     ThreadNode &node = thread_control->nodes[rank];
 
-
     for(set<int>::iterator it=node.connected_cells.begin(); it!= node.connected_cells.end();it++) {
         int cell_index = *it;
         cells[cell_index]->reset();

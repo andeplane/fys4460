@@ -25,10 +25,10 @@ int main(int args, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 #endif
 
-    int number_of_FCC_cells = 6;
+    int number_of_FCC_cells = 32;
     double T = 1.0;
     double dt = 0.01;
-    int timesteps = 10;
+    int timesteps = 1000;
 
     System *system = new System(my_rank,numprocs,dt,number_of_FCC_cells, T);
 
@@ -40,7 +40,7 @@ int main(int args, char *argv[]) {
 
         file->open("pos.xyz");
         system->file = file;
-        // system->printPositionsToFile(file);
+        system->printPositionsToFile(file);
     }
 
     double t = 0;
@@ -53,9 +53,9 @@ int main(int args, char *argv[]) {
 
         if(my_rank == 0) {
             if(timesteps < 500) thermostat.apply(system->atoms);
-            // sampler->sample(t);
+            sampler->sample(t);
 
-            // system->printPositionsToFile(file);
+            system->printPositionsToFile(file);
         }
 
 	}

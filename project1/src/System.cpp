@@ -22,26 +22,6 @@ System::System(int rank_, int nodes_, double dt, int number_of_FCC_cells_, doubl
     initialize(dt);
 }
 
-void calculate_force_between_atoms(Atom *atom0, Atom *atom1, double &P) {
-    double dr_2, dr_6, dr_12, f, potential_energy;
-
-    vec dr = atom0->distanceToAtom(atom1);
-    dr_2 = dot(dr,dr);
-
-    dr_6 = pow(dr_2,3);
-    dr_12 = pow(dr_6,2);
-
-    f = 24*(2.0/dr_12-1.0/dr_6)/dr_2;
-
-    potential_energy = 4*(1.0/dr_12 - 1.0/dr_6);
-
-    atom0->a += f*dr;
-    atom0->potential_energy += potential_energy;
-    atom1->a -= f*dr;
-
-    P += f*norm(dr,2);
-}
-
 void System::calculateAccelerations() {
 #ifdef MPI_ENABLED
     P = 0;
@@ -114,6 +94,10 @@ void System::step(double dt) {
 
     t += dt;
     steps++;
+
+    if(rank == 0) {
+        cout << "Calculating timestep " << steps << endl;
+    }
 
 #ifdef RESCALE_VELOCITIES
 	if(!(steps % 200)) {

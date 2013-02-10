@@ -36,6 +36,6 @@ public:
     void update_initial_position(const double &rx_, const double &ry_, const double &rz_);
 
     void addR(const vec &dr);
-    const vec &distanceToAtom(Atom *atom);
+    const vec &distanceToAtom(Atom *atom, const vec &displacement);
 	double squaredDistanceFromInitialPosition();
 };

@@ -66,9 +66,10 @@ void Atom::addR(const vec& dr) {
     }
 }
 
-const vec& Atom::distanceToAtom(Atom *atom) {
-    dr = r-atom->r;
-
+const vec& Atom::distanceToAtom(Atom *atom, const vec &displacement) {
+    dr = r-atom->r + displacement;
+    return dr;
+    /*
     double L = system->L;
 
 	for(int i=0;i<3;i++) {
@@ -79,6 +80,7 @@ const vec& Atom::distanceToAtom(Atom *atom) {
 	}
 
 	return dr;
+    */
 }
 
 double Atom::squaredDistanceFromInitialPosition() {

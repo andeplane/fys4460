@@ -19,6 +19,7 @@ Atom::Atom(System *system_) {
     type = 0;
     system = system_;
     potential_energy = 0;
+    dr = zeros<vec> (3,1);
 }
 
 Atom::~Atom() {

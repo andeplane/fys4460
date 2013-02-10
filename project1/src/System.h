@@ -24,8 +24,6 @@ private:
 	void initVelocities();
 	void rescaleVelocities();
 	void calculateAccelerations();
-	
-	double gasdev();
 
 public:
     vector<Atom*> atoms;
@@ -49,11 +47,12 @@ public:
 
 	void printPositionsToFile(ofstream *file);
     void sort_cells();
+#ifdef MPI_ENABLED
     void send_particles_to_slaves();
     void receive_particles_from_master();
     void send_particles_back_to_master();
     void receive_particles_back_from_slaves();
-
+#endif
 	void step(double dt);
     System(int rank_, int nodes_, double dt, int number_of_FCC_cells_=4, double T_ = 1.0);
 

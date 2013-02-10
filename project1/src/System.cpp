@@ -1,5 +1,3 @@
-// #define RESCALE_VELOCITIES
-
 #include <iostream>
 #include "math.h"
 #include "time.h"
@@ -24,7 +22,7 @@ System::System(int rank_, int nodes_, double dt, int number_of_FCC_cells_, doubl
     initialize(dt);
 }
 
-double calculate_force_between_atoms(Atom *atom0, Atom *atom1) {
+void calculate_force_between_atoms(Atom *atom0, Atom *atom1, double &P) {
     double dr_2, dr_6, dr_12, f, potential_energy;
 
     vec dr = atom0->distanceToAtom(atom1);
@@ -35,19 +33,18 @@ double calculate_force_between_atoms(Atom *atom0, Atom *atom1) {
 
     f = 24*(2.0/dr_12-1.0/dr_6)/dr_2;
 
-    potential_energy = 2*(1.0/dr_12 - 1.0/dr_6);
+    potential_energy = 4*(1.0/dr_12 - 1.0/dr_6);
 
     atom0->a += f*dr;
     atom0->potential_energy += potential_energy;
     atom1->a -= f*dr;
-    // atom1->potential_energy += potential_energy;
 
-    return f*norm(dr,2);
+    P += f*norm(dr,2);
 }
 
 void System::calculateAccelerations() {
+#ifdef MPI_ENABLED
     P = 0;
-
     if(rank==0) {
         // Reset all atom accelerations
         for(int n=0;n<N;n++) {
@@ -80,7 +77,23 @@ void System::calculateAccelerations() {
     } else {
         send_particles_back_to_master();
     }
+#else
+    P = 0;
+    for(int n=0;n<N;n++) {
+        atoms[n]->a.zeros();
+        atoms[n]->potential_energy = 0;
+    }
 
+    for(int c=0;c<cells.size();c++) {
+        cells[c]->reset();
+    }
+
+    for(int c=0;c<cells.size();c++) {
+        cells[c]->calculate_forces(this);
+    }
+
+    P /= 3*V;
+#endif
 }
 
 void System::step(double dt) {
@@ -129,6 +142,14 @@ void System::sort_cells() {
 
         int cell_index = calculate_cell_index(i,j,k,cells_x,cells_y,cells_z);
 
+#ifdef DEBUG_ME
+        if(cell_index < 0 || cell_index >= cells.size()) {
+            cout << "Problem with cell index for particle " << n << endl;
+            cout << "Particle is at " << a->r << endl;
+            cout << "which gives (i,j,k)=" << i << " " << j << " " << k << endl;
+        }
+#endif
+
         cells[cell_index]->add_atom(a);
     }
 }
@@ -142,6 +163,7 @@ void System::printPositionsToFile(ofstream *file) {
 	}
 }
 
+#ifdef MPI_ENABLED
 void System::send_particles_to_slaves() {
     sort_cells();
 
@@ -267,3 +289,4 @@ void System::send_particles_back_to_master() {
     delete accelerations;
     delete indices;
 }
+#endif

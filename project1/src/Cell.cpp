@@ -9,10 +9,13 @@ Cell::Cell()
     dr = zeros<vec>(3,1);
     reset();
     reset_atom_list();
+    dr(0) = 1;
+    dr(1) = 0;
+    dr(2) = 0;
  }
 
 
-double Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1) {
+void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, double &P) {
     double dr_2, dr_6, dr_12, f, potential_energy;
 
     dr = atom0->distanceToAtom(atom1);
@@ -23,20 +26,19 @@ double Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1) {
 
     f = 24*(2.0/dr_12-1.0/dr_6)/dr_2;
 
-    potential_energy = 2*(1.0/dr_12 - 1.0/dr_6);
+    potential_energy = 4*(1.0/dr_12 - 1.0/dr_6);
 
     atom0->a += f*dr;
     atom0->potential_energy += potential_energy;
     atom1->a -= f*dr;
-    atom1->potential_energy += potential_energy;
 
-    return f*norm(dr,2);
+    P += f*norm(dr,2);
 }
 
-double Cell::calculate_forces(System *system) {
+void Cell::calculate_forces(System *system) {
     Cell *cell;
     Atom *atom0, *atom1;
-    double dP = 0;
+
     for(int i=0;i<atoms.size();i++) {
         atom0 = atoms[i];
 
@@ -48,7 +50,7 @@ double Cell::calculate_forces(System *system) {
             for(int k=0;k<cell->atoms.size();k++) {
                 atom1 = cell->atoms[k];
 
-                dP += calculate_force_between_atoms(atom0, atom1);
+                calculate_force_between_atoms(atom0, atom1, system->P);
             }
         }
     }
@@ -59,13 +61,11 @@ double Cell::calculate_forces(System *system) {
         for(int j=i+1;j<atoms.size();j++) {
 
             atom1 = atoms[j];
-            dP += calculate_force_between_atoms(atom0, atom1);
+            calculate_force_between_atoms(atom0, atom1, system->P);
         }
     }
 
     forces_are_calculated = true;
-
-    return dP;
 }
 
 void Cell::find_neighbours(const int c_x, const int c_y, const int c_z, System *system) {

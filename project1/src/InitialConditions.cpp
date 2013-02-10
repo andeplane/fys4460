@@ -1,5 +1,7 @@
 #include <System.h>
+#ifdef MPI_ENABLED
 #include <mpi.h>
+#endif
 // #define UNIFORMVELOCITY
 
 double vmax = 8;
@@ -13,9 +15,10 @@ void System::initialize(double dt) {
         init_atoms();
     }
 
+#ifdef MPI_ENABLED
     // Send info about system size to all nodes
     MPI_Bcast(&L,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-
+#endif
     V = L*L*L;
 
     cells_x = L/3;
@@ -108,28 +111,6 @@ void System::init_atoms() {
     N = atoms.size();
     printf("done");
     initVelocities();
-}
-
-double System::gasdev() {
-	static bool available = false;
-	static double gset;
-	double fac, rsq, v1, v2;
-	if(!available) {
-        do {
-            v1 = 2.0*rnd->nextDouble() - 1.0;
-            v2 = 2.0*rnd->nextDouble() - 1.0;
-			rsq = v1*v1+v2*v2;
-        } while(rsq>= 1.0 || rsq == 0.0);
-
-		fac = sqrt(-2.0*log(rsq)/rsq);
-		gset = v1*fac;
-		available = true;
-		return v2*fac;
-	}
-	else {
-		available = false;
-		return gset;
-	}
 }
 
 void System::initVelocities() {

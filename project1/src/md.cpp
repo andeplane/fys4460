@@ -1,5 +1,3 @@
-// #define ARMA_NO_DEBUG
-
 #include <iostream>
 #include "math.h"
 #include "time.h"
@@ -9,19 +7,23 @@
 #include "System.h"
 #include "StatisticsSampler.h"
 #include <thermostat.h>
+#ifdef MPI_ENABLED
 #include <mpi.h>
+#endif
 
 using namespace arma;
 using namespace std;
 
 int main(int args, char *argv[]) {
+    // QTime myTimer;
+    // myTimer.start();
 
-
-    int numprocs , my_rank;
-
+    int numprocs = 1, my_rank = 0;
+#ifdef MPI_ENABLED
     MPI_Init(&args,&argv) ;
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+#endif
 
     int number_of_FCC_cells = 6;
     double T = 1.0;
@@ -41,7 +43,7 @@ int main(int args, char *argv[]) {
 
         file->open("pos.xyz");
         system->file = file;
-        system->printPositionsToFile(file);
+        // system->printPositionsToFile(file);
     }
 
     double t = 0;
@@ -56,15 +58,20 @@ int main(int args, char *argv[]) {
             if(timesteps < 500) thermostat.apply(system->atoms);
             // sampler->sample(t);
 
-            system->printPositionsToFile(file);
+            // system->printPositionsToFile(file);
         }
 
 	}
 	
     if(my_rank == 0) file->close();
 
-
+#ifdef MPI_ENABLED
     MPI_Finalize();
-
+#endif
+    // do something..
+    /*
+    int nMilliseconds = myTimer.elapsed();
+    cout << "Program used " << nMilliseconds/1000 << " seconds." << endl;
+    */
 	return 0;
 }

@@ -77,25 +77,21 @@ void System::init_atoms() {
     double xCell[4] = {0, 0.5, 0.5, 0};
     double yCell[4] = {0, 0.5, 0, 0.5};
     double zCell[4] = {0, 0, 0.5, 0.5};
+    double rx,ry,rz;
 
-    double max_coord = 0;
-
-	int n = 0;
     for(int x = 0; x < number_of_FCC_cells; x++) {
         for(int y = 0; y < number_of_FCC_cells; y++) {
             for(int z = 0; z < number_of_FCC_cells; z++) {
 				for(int k = 0; k < 4; k++) {
                     Atom *atom = new Atom(this);
 
-                    // Set positions and type
-                    atom->r(0) = (x+xCell[k]) * b;
-                    atom->r(1) = (y+yCell[k]) * b;
-                    atom->r(2) = (z+zCell[k]) * b;
-                    atom->r_initial = atom->r;
+                    rx = (x+xCell[k]) * b;
+                    ry = (y+yCell[k]) * b;
+                    rz = (z+zCell[k]) * b;
 
-                    if(atom->r(0) > max_coord) max_coord = atom->r(0);
-                    if(atom->r(1) > max_coord) max_coord = atom->r(1);
-                    if(atom->r(2) > max_coord) max_coord = atom->r(2);
+                    atom->update_position(rx,ry,rz);
+                    atom->update_initial_position(rx,ry,rz);
+                    // Set positions and type
 
                     atom->type = k>0; // For visualization
                     atom->index = atoms.size();
@@ -131,16 +127,9 @@ void System::initVelocities() {
     double k = 1.0;
 
     for(int n=0; n<N; n++ ) {
-        atoms[n]->v(0) = rnd->nextGauss()*sqrt(k*T);
-        atoms[n]->v(1) = rnd->nextGauss()*sqrt(k*T);
-        atoms[n]->v(2) = rnd->nextGauss()*sqrt(k*T);
+        atoms[n]->update_velocity( rnd->nextGauss()*sqrt(k*T) , rnd->nextGauss()*sqrt(k*T) , rnd->nextGauss()*sqrt(k*T) );
     }
 
-    /*
-    for(int n=0;n<N;n++)
-		for(int i=0;i<3;i++) 
-            atoms[n]->v(i) = gasdev();
-    */
     double temp = 0;
 
     for(int n=0;n<N;n++) {

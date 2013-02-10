@@ -6,58 +6,58 @@
 Cell::Cell()
 {
     initialized = 1337;
-    dr = zeros<vec>(3,1);
+
     reset();
     reset_atom_list();
-    dr(0) = 1;
-    dr(1) = 0;
-    dr(2) = 0;
  }
 
 
 void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, double &P) {
-    double dr_2, dr_6, dr_12, f, potential_energy;
+    double dr_2, dr_6, dr_12, f, potential_energy, dr_12_inv, dr_6_inv;
 
-    dr = atom0->distanceToAtom(atom1);
+    const vec &dr = atom0->distanceToAtom(atom1);
+
     dr_2 = dot(dr,dr);
 
     dr_6 = pow(dr_2,3);
     dr_12 = pow(dr_6,2);
+    dr_12_inv = 1.0/dr_12;
+    dr_6_inv = 1.0/dr_6;
 
-    f = 24*(2.0/dr_12-1.0/dr_6)/dr_2;
 
-    potential_energy = 4*(1.0/dr_12 - 1.0/dr_6);
+    f = 24*(2.0*dr_12_inv-dr_6_inv)/dr_2;
 
-    atom0->a += f*dr;
+    potential_energy = 4*(dr_12_inv - dr_6_inv);
+
+    atom0->a += dr*f;
     atom0->potential_energy += potential_energy;
-    atom1->a -= f*dr;
+    atom1->a -= dr*f;
 
-    P += f*norm(dr,2);
+    P += dr_2*f;
 }
 
 void Cell::calculate_forces(System *system) {
     Cell *cell;
     Atom *atom0, *atom1;
 
-    for(int i=0;i<atoms.size();i++) {
-        atom0 = atoms[i];
+    for(int c=0;c<cells.size();c++) {
+        cell = system->cells[cells[c]];
 
-        for(int c=0;c<cells.size();c++) {
-            cell = system->cells[cells[c]];
+        if(cell->forces_are_calculated) continue;
 
-            if(cell->forces_are_calculated) continue;
+        for(int k=0;k<cell->atoms.size();k++) {
+            atom1 = cell->atoms[k];
 
-            for(int k=0;k<cell->atoms.size();k++) {
-                atom1 = cell->atoms[k];
-
+            for(int i=0;i<atoms.size();i++) {
+                atom0 = atoms[i];
                 calculate_force_between_atoms(atom0, atom1, system->P);
             }
         }
     }
 
-    // Calculate force between atoms in this cell
     for(int i=0;i<atoms.size();i++) {
         atom0 = atoms[i];
+
         for(int j=i+1;j<atoms.size();j++) {
 
             atom1 = atoms[j];

@@ -19,7 +19,6 @@ public:
     vector<Atom*> atoms;
     int i,j,k,index;
     bool forces_are_calculated;
-    vec dr;
     int initialized;
 
     Cell();

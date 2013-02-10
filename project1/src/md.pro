@@ -1,7 +1,12 @@
 TEMPLATE = app
 CONFIG += console
 CONFIG -= qt
-DEFINES += ARMA_NO_DEBUG
+
+release {
+    DEFINES += ARMA_NO_DEBUG
+}
+
+DEFINES += MPI_ENABLED
 
 SOURCES += \
     System.cpp \
@@ -42,7 +47,8 @@ unix:!mac {
 }
 
 # MPI Settings
-QMAKE_CXX = mpicxx
+# QMAKE_CXX = mpicxx
+QMAKE_CXX = icc
 QMAKE_CXX_RELEASE = $$QMAKE_CXX
 QMAKE_CXX_DEBUG = $$QMAKE_CXX
 QMAKE_LINK = $$QMAKE_CXX

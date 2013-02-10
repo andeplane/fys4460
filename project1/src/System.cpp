@@ -67,7 +67,7 @@ void System::calculateAccelerations() {
 
     for(set<int>::iterator it=node.owned_cells.begin(); it!= node.owned_cells.end();it++) {
         int cell_index = *it;
-        P += cells[cell_index]->calculate_forces(this);
+        cells[cell_index]->calculate_forces(this);
     }
 
     P /= 3*V;
@@ -120,10 +120,6 @@ void System::step(double dt) {
         rescaleVelocities();
 	}
 #endif
-
-    if(rank == 0){
-        cout << "Timestep " << steps << " done." << endl;
-    }
 }
 
 void System::sort_cells() {

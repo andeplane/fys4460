@@ -36,7 +36,7 @@ void System::initialize(double dt) {
         printf("T=%.2f\n",T);
         printf("L=%.2f\n",L);
         printf("%d atoms",N);
-        printf("%d cells",cells.size());
+        printf("%d cells",(int)cells.size());
         printf("%d cells per dim",cells_z);
         sort_cells();
     }

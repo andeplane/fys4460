@@ -66,7 +66,7 @@ void Atom::addR(const vec& dr) {
     }
 }
 
-const vec& Atom::distanceToAtom(Atom *atom, const vec &displacement) {
+const vec& Atom::distance_to_atom(Atom *atom, const vec &displacement) {
      dr = r-atom->r + displacement;
     return dr;
 /*

@@ -17,7 +17,10 @@ SOURCES += \
     random.cpp \
     Cell.cpp \
     thermostat.cpp \
-    threadcontrol.cpp
+    threadcontrol.cpp \
+    CVector.cpp \
+    CUtil.cpp \
+    CMath.cpp
 
 HEADERS += \
     System.h \
@@ -27,7 +30,13 @@ HEADERS += \
     random.h \
     Cell.h \
     thermostat.h \
-    threadcontrol.h
+    threadcontrol.h \
+    CVector.h \
+    CUtil.h \
+    CIniFile.h \
+    CMatrix.h \
+    CMath.h \
+    Stdafx.h
 
 mac {
     CONFIG -= app_bundle

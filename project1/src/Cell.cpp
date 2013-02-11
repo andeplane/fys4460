@@ -15,7 +15,7 @@ Cell::Cell()
 void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, double &P, const vec &displacement_vector) {
     double dr_2, dr_6, dr_12, f, potential_energy, dr_12_inv, dr_6_inv;
 
-    const vec &dr = atom0->distanceToAtom(atom1,displacement_vector);
+    const vec &dr = atom0->distance_to_atom(atom1,displacement_vector);
 
     dr_2 = dot(dr,dr);
 

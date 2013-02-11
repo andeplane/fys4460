@@ -7,6 +7,8 @@
 #include "System.h"
 #include "StatisticsSampler.h"
 #include <thermostat.h>
+#include <CIniFile.h>
+
 #ifdef MPI_ENABLED
 #include <mpi.h>
 #endif
@@ -15,8 +17,8 @@ using namespace arma;
 using namespace std;
 
 int main(int args, char *argv[]) {
-    // QTime myTimer;
-    // myTimer.start();
+    CIniFile ini;
+    ini.load("../md.ini");
 
     int numprocs = 1, my_rank = 0;
 #ifdef MPI_ENABLED
@@ -25,10 +27,11 @@ int main(int args, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 #endif
 
-    int number_of_FCC_cells = 32;
-    double T = 1.0;
-    double dt = 0.01;
-    int timesteps = 1000;
+    int number_of_FCC_cells = ini.getint("number_of_FCC_cells");
+    double T = ini.getdouble("temperature");
+    double dt = ini.getdouble("dt");
+    int timesteps = ini.getint("timesteps");
+    bool print_positions = ini.getbool("print_positions");
 
     System *system = new System(my_rank,numprocs,dt,number_of_FCC_cells, T);
 
@@ -40,7 +43,9 @@ int main(int args, char *argv[]) {
 
         file->open("pos.xyz");
         system->file = file;
-        system->printPositionsToFile(file);
+        if(print_positions) {
+            system->printPositionsToFile(file);
+        }
     }
 
     double t = 0;
@@ -55,7 +60,9 @@ int main(int args, char *argv[]) {
             if(timesteps < 500) thermostat.apply(system->atoms);
             sampler->sample(t);
 
-            system->printPositionsToFile(file);
+            if(print_positions) {
+                system->printPositionsToFile(file);
+            }
         }
 
 	}
@@ -65,10 +72,6 @@ int main(int args, char *argv[]) {
 #ifdef MPI_ENABLED
     MPI_Finalize();
 #endif
-    // do something..
-    /*
-    int nMilliseconds = myTimer.elapsed();
-    cout << "Program used " << nMilliseconds/1000 << " seconds." << endl;
-    */
+
 	return 0;
 }

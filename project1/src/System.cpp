@@ -77,12 +77,6 @@ void System::calculateAccelerations() {
 
 void System::step(double dt) {
     if(rank == 0) {
-        sort_cells();
-    }
-
-    // time_t t0 = clock();
-    // cout << "Time spent on sorting: " << ((double)clock()-t0)/CLOCKS_PER_SEC << endl;
-    if(rank == 0) {
         for(int n=0;n<N;n++) {
             atoms[n]->v += atoms[n]->a*dt;
             atoms[n]->addR(atoms[n]->v*dt);

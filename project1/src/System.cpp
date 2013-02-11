@@ -140,8 +140,7 @@ void System::printPositionsToFile(ofstream *file) {
 void System::send_particles_to_slaves() {
     sort_cells();
 
-    double *positions_and_velocities = new double[6*N];
-    int *indices = new int[N];
+    double *data = new double[4*N];
     int particles = 0;
 
     Cell *cell;
@@ -152,27 +151,21 @@ void System::send_particles_to_slaves() {
             int cell_index = *it;
             cell = cells[cell_index];
             for(int n=0;n<cell->atoms.size();n++) {
-                positions_and_velocities[particles*6 + 0] = cell->atoms[n]->r(0);
-                positions_and_velocities[particles*6 + 1] = cell->atoms[n]->r(1);
-                positions_and_velocities[particles*6 + 2] = cell->atoms[n]->r(2);
-
-                positions_and_velocities[particles*6 + 3] = cell->atoms[n]->v(0);
-                positions_and_velocities[particles*6 + 4] = cell->atoms[n]->v(1);
-                positions_and_velocities[particles*6 + 5] = cell->atoms[n]->v(2);
-                indices[particles] = cell->atoms[n]->index;
+                data[particles*4 + 0] = cell->atoms[n]->r(0);
+                data[particles*4 + 1] = cell->atoms[n]->r(1);
+                data[particles*4 + 2] = cell->atoms[n]->r(2);
+                data[particles*4 + 3] = cell->atoms[n]->index;
 
                 particles++;
             }
         }
 
         MPI_Send(&particles,1,MPI_INT,node_id,100,MPI_COMM_WORLD);
-        MPI_Send(indices,particles,MPI_INT,node_id,100,MPI_COMM_WORLD);
-        MPI_Send(positions_and_velocities,6*particles,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD);
+        MPI_Send(data,4*particles,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD);
         particles = 0;
     }
 
-    delete positions_and_velocities;
-    delete indices;
+    delete data;
 }
 
 void System::receive_particles_from_master() {
@@ -187,21 +180,16 @@ void System::receive_particles_from_master() {
     int particles = 0;
     MPI_Recv(&particles,1,MPI_INT,0,100,MPI_COMM_WORLD,&status);
 
-    double *positions_and_velocities = new double[6*particles];
+    double *data = new double[4*particles];
     int *indices = new int[particles];
-    MPI_Recv(indices,particles,MPI_INT,0,100,MPI_COMM_WORLD,&status);
-    MPI_Recv(positions_and_velocities,6*particles,MPI_DOUBLE,0,100,MPI_COMM_WORLD,&status);
+    MPI_Recv(data,4*particles,MPI_DOUBLE,0,100,MPI_COMM_WORLD,&status);
 
     for(int n=0;n<particles;n++) {
         Atom *atom = new Atom(this);
-        atom->r(0) = positions_and_velocities[6*n + 0];
-        atom->r(1) = positions_and_velocities[6*n + 1];
-        atom->r(2) = positions_and_velocities[6*n + 2];
-
-        atom->v(0) = positions_and_velocities[6*n + 3];
-        atom->v(1) = positions_and_velocities[6*n + 4];
-        atom->v(2) = positions_and_velocities[6*n + 5];
-        atom->index = indices[n];
+        atom->r(0) = data[4*n + 0];
+        atom->r(1) = data[4*n + 1];
+        atom->r(2) = data[4*n + 2];
+        atom->index = round(data[4*n + 3]);
 
         atoms.push_back(atom);
     }
@@ -209,8 +197,7 @@ void System::receive_particles_from_master() {
     N = atoms.size();
     sort_cells();
 
-    delete positions_and_velocities;
-    delete indices;
+    delete data;
 }
 
 void System::receive_particles_back_from_slaves() {
@@ -218,48 +205,42 @@ void System::receive_particles_back_from_slaves() {
 
     for(int i=1;i<nodes;i++) {
         int particles = 0;
-        double dP;
         MPI_Recv(&particles,1,MPI_INT,i,100,MPI_COMM_WORLD,&status);
-        MPI_Recv(&dP,1,MPI_DOUBLE,i,100,MPI_COMM_WORLD,&status);
-        P += dP;
 
-        int *indices = new int[particles];
-        double *accelerations = new double[4*particles];
+        double *data = new double[5*particles+1];
 
-        MPI_Recv(indices,particles,MPI_INT,i,100,MPI_COMM_WORLD,&status);
-        MPI_Recv(accelerations,4*particles,MPI_DOUBLE,i,100,MPI_COMM_WORLD,&status);
+        MPI_Recv(data,5*particles+1,MPI_DOUBLE,i,100,MPI_COMM_WORLD,&status);
         for(int j=0;j<particles;j++) {
-            atoms[indices[j]]->a(0) += accelerations[4*j+0];
-            atoms[indices[j]]->a(1) += accelerations[4*j+1];
-            atoms[indices[j]]->a(2) += accelerations[4*j+2];
-            atoms[indices[j]]->potential_energy += accelerations[4*j+3];
+            atoms[ round(data[5*j+4]) ]->a(0) += data[5*j+0];
+            atoms[ round(data[5*j+4]) ]->a(1) += data[5*j+1];
+            atoms[ round(data[5*j+4]) ]->a(2) += data[5*j+2];
+            atoms[ round(data[5*j+4]) ]->potential_energy += data[5*j+3];
         }
 
-        delete accelerations;
-        delete indices;
+        P += data[5*particles];
+
+        delete data;
     }
 
     P += N/V*T;
 }
 
 void System::send_particles_back_to_master() {
-    int *indices = new int[N];
-    double *accelerations = new double[4*N];
+    double *data = new double[5*N+1];
 
     for(int n=0;n<N;n++) {
-        indices[n] = atoms[n]->index;
-        accelerations[4*n+0] = atoms[n]->a(0);
-        accelerations[4*n+1] = atoms[n]->a(1);
-        accelerations[4*n+2] = atoms[n]->a(2);
-        accelerations[4*n+3] = atoms[n]->potential_energy;
+        data[5*n+0] = atoms[n]->a(0);
+        data[5*n+1] = atoms[n]->a(1);
+        data[5*n+2] = atoms[n]->a(2);
+        data[5*n+3] = atoms[n]->potential_energy;
+        data[5*n+4] = atoms[n]->index;
     }
 
-    MPI_Send(&N,1,MPI_INT,0,100,MPI_COMM_WORLD);
-    MPI_Send(&P,1,MPI_DOUBLE,0,100,MPI_COMM_WORLD);
-    MPI_Send(indices,N,MPI_INT,0,100,MPI_COMM_WORLD);
-    MPI_Send(accelerations,4*N,MPI_DOUBLE,0,100,MPI_COMM_WORLD);
+    data[5*N] = P;
 
-    delete accelerations;
-    delete indices;
+    MPI_Send(&N,1,MPI_INT,0,100,MPI_COMM_WORLD);
+    MPI_Send(data,5*N+1,MPI_DOUBLE,0,100,MPI_COMM_WORLD);
+
+    delete data;
 }
 #endif

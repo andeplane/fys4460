@@ -125,9 +125,15 @@ void System::initVelocities() {
 	printf("Creating maxwellian velocities...");
 
     double k = 1.0;
+    double vx,vy,vz;
+    r_and_v = new double[6*N];
 
     for(int n=0; n<N; n++ ) {
-        atoms[n]->update_velocity( rnd->nextGauss()*sqrt(k*T) , rnd->nextGauss()*sqrt(k*T) , rnd->nextGauss()*sqrt(k*T) );
+        vx = rnd->nextGauss()*sqrt(k*T);
+        vy = rnd->nextGauss()*sqrt(k*T);
+        vz = rnd->nextGauss()*sqrt(k*T);
+
+        atoms[n]->update_velocity( vx , vy, vz );
     }
 
     double temp = 0;
@@ -145,8 +151,17 @@ void System::initVelocities() {
 		
     vCM /= N;
 	
-    for(int n=0;n<N;n++)
+    for(int n=0;n<N;n++) {
+        /*
+        vx = r_and_v[6*n+3] - vCM(0);
+        vy = r_and_v[6*n+4] - vCM(1);
+        vz = r_and_v[6*n+5] - vCM(2);
+        */
+        // atoms[n]->update_velocity( vx , vy, vz );
+
         atoms[n]->v -= vCM;
+    }
+
 	printf("done\n");
     rescaleVelocities();
 #endif

@@ -24,9 +24,11 @@ private:
 	void initVelocities();
 	void rescaleVelocities();
 	void calculateAccelerations();
+    void update_velocity_and_move(const double &dt);
 
 public:
     vector<Atom*> atoms;
+    vector<Atom*> all_atoms;
 	int N; 		// Number of atoms
     int number_of_FCC_cells;
 	double T; 	// Temperature
@@ -45,7 +47,7 @@ public:
     vector<int> cell_indices;
 
 	void printPositionsToFile(ofstream *file);
-    void sort_cells();
+    void sort_cells(bool calculate_all_atoms = false);
 #ifdef MPI_ENABLED
     void send_particles_to_slaves();
     void receive_particles_from_master();

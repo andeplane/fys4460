@@ -22,14 +22,21 @@ System::System(int rank_, int nodes_, double dt, int number_of_FCC_cells_, doubl
     initialize(dt);
 }
 
+void System::update_velocity_and_move(const double &dt) {
+    for(int n=0;n<all_atoms.size();n++) {
+        all_atoms[n]->v += 0.5*all_atoms[n]->a*dt;
+        all_atoms[n]->addR(all_atoms[n]->v*dt);
+    }
+}
+
 void System::calculateAccelerations() {
 #ifdef MPI_ENABLED
     P = 0;
     if(rank==0) {
         // Reset all atom accelerations
-        for(int n=0;n<N;n++) {
-            atoms[n]->a.zeros();
-            atoms[n]->potential_energy = 0;
+        for(int n=0;n<all_atoms.size();n++) {
+            all_atoms[n]->a.zeros();
+            all_atoms[n]->potential_energy = 0;
         }
         send_particles_to_slaves();
     }
@@ -77,10 +84,7 @@ void System::calculateAccelerations() {
 
 void System::step(double dt) {
     if(rank == 0) {
-        for(int n=0;n<N;n++) {
-            atoms[n]->v += atoms[n]->a*dt;
-            atoms[n]->addR(atoms[n]->v*dt);
-        }
+        update_velocity_and_move(dt);
     }
 
     calculateAccelerations();
@@ -91,23 +95,22 @@ void System::step(double dt) {
     if(rank == 0) {
         cout << "Calculating timestep " << steps << endl;
     }
-
-#ifdef RESCALE_VELOCITIES
-	if(!(steps % 200)) {
-        rescaleVelocities();
-	}
-#endif
 }
 
-void System::sort_cells() {
+void System::sort_cells(bool calculate_all_atoms) {
     int i,j,k;
     Atom *a;
     for(int i=0;i<cells.size();i++) {
         cells[i]->reset_atom_list();
     }
 
+    vector<Atom*> &atom_list = atoms;
+    if(calculate_all_atoms) {
+        atom_list = all_atoms;
+    }
+
     for(int n=0;n<N;n++) {
-        a = atoms[n];
+        a = atom_list[n];
 
         i = a->r(0)/cell_width;
         j = a->r(1)/cell_width;
@@ -120,6 +123,7 @@ void System::sort_cells() {
             cout << "Problem with cell index for particle " << n << endl;
             cout << "Particle is at " << a->r << endl;
             cout << "which gives (i,j,k)=" << i << " " << j << " " << k << endl;
+            cout << "Btw, we should have " << N << " atoms." << endl;
         }
 #endif
 
@@ -128,22 +132,51 @@ void System::sort_cells() {
 }
 
 void System::printPositionsToFile(ofstream *file) {
-    *file << N << endl;
+    *file << all_atoms.size() << endl;
 	*file << "H atoms are the face atoms, O are the cube atoms" << endl;
 
-    for(int n=0;n<N;n++) {
-        *file << (atoms[n]->type ? "H " : "O ") << atoms[n]->r(0) << " " << atoms[n]->r(1) << " " << atoms[n]->r(2) << endl;
+    for(int n=0;n<all_atoms.size();n++) {
+        *file << (all_atoms[n]->type ? "H " : "O ") << all_atoms[n]->r(0) << " " << all_atoms[n]->r(1) << " " << all_atoms[n]->r(2) << endl;
 	}
 }
 
 #ifdef MPI_ENABLED
 void System::send_particles_to_slaves() {
-    sort_cells();
+    sort_cells(true);
 
     double *data = new double[4*N];
-    int particles = 0;
 
     Cell *cell;
+
+    // Add my own atoms to my atoms-list
+    int particles = 0;
+    N = 0;
+    Atom *atom;
+
+    ThreadNode &node = thread_control->nodes[0];
+    for(set<int>::iterator it=node.connected_cells.begin(); it!= node.connected_cells.end();it++) {
+        int cell_index = *it;
+        cell = cells[cell_index];
+        for(int n=0;n<cell->atoms.size();n++) {
+            atom = atoms[particles];
+
+            if(particles>=atoms.size()) {
+                atoms.push_back(atom);
+                N = atoms.size();
+            }
+            else {
+                atom = atoms[particles];
+            }
+
+            atom->r(0) = cell->atoms[n]->r(0);
+            atom->r(1) = cell->atoms[n]->r(1);
+            atom->r(2) = cell->atoms[n]->r(2);
+            atom->index = cell->atoms[n]->index;
+        }
+    }
+
+    N = particles;
+    particles = 0;
 
     for(int node_id=1;node_id<nodes;node_id++) {
         ThreadNode &node = thread_control->nodes[node_id];
@@ -169,11 +202,13 @@ void System::send_particles_to_slaves() {
 }
 
 void System::receive_particles_from_master() {
+    /*
     for(int n=0;n<N;n++) {
         delete atoms[n];
     }
 
     atoms.clear();
+    */
 
     MPI_Status status;
 
@@ -181,20 +216,28 @@ void System::receive_particles_from_master() {
     MPI_Recv(&particles,1,MPI_INT,0,100,MPI_COMM_WORLD,&status);
 
     double *data = new double[4*particles];
-    int *indices = new int[particles];
-    MPI_Recv(data,4*particles,MPI_DOUBLE,0,100,MPI_COMM_WORLD,&status);
 
+    MPI_Recv(data,4*particles,MPI_DOUBLE,0,100,MPI_COMM_WORLD,&status);
+    Atom *atom;
     for(int n=0;n<particles;n++) {
-        Atom *atom = new Atom(this);
+        if(n>=atoms.size()) {
+            atom = new Atom(this);
+            atoms.push_back(atom);
+            N = atoms.size();
+        }
+        else {
+            atom = atoms[n];
+        }
+
         atom->r(0) = data[4*n + 0];
         atom->r(1) = data[4*n + 1];
         atom->r(2) = data[4*n + 2];
-        atom->index = round(data[4*n + 3]);
 
-        atoms.push_back(atom);
+        atom->index = round(data[4*n + 3]);
     }
 
-    N = atoms.size();
+    N = particles;
+
     sort_cells();
 
     delete data;

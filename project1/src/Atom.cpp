@@ -30,22 +30,12 @@ void Atom::update_velocity(const double &vx_, const double &vy_, const double &v
     v(0) = vx_;
     v(1) = vy_;
     v(2) = vz_;
-    /*
-    system->r_and_v[6*index+3] = vx_;
-    system->r_and_v[6*index+4] = vy_;
-    system->r_and_v[6*index+5] = vz_;
-    */
 }
 
 void Atom::update_position(const double &rx_, const double &ry_, const double &rz_) {
     r(0) = rx_;
     r(1) = ry_;
     r(2) = rz_;
-    /*
-    system->r_and_v[6*index+0] = rx_;
-    system->r_and_v[6*index+1] = ry_;
-    system->r_and_v[6*index+2] = rz_;
-    */
 }
 
 void Atom::update_initial_position(const double &rx_, const double &ry_, const double &rz_) {
@@ -76,20 +66,6 @@ void Atom::addR(const vec& dr) {
 const vec& Atom::distance_to_atom(Atom *atom, const vec &displacement) {
      dr = r-atom->r + displacement;
     return dr;
-/*
-    dr = r-atom->r;
-
-    double L = system->L;
-
-	for(int i=0;i<3;i++) {
-		if(dr(i) > L / 2.0) 
-			dr(i) -= L;
-		else if(dr(i)< -L / 2.0)
-			dr(i) += L;
-	}
-
-	return dr;
-    */
 }
 
 double Atom::squaredDistanceFromInitialPosition() {

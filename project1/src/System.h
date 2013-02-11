@@ -39,8 +39,6 @@ public:
     int nodes;
     ofstream *file;
     ThreadControl *thread_control;
-    double *r_and_v;
-
 
     Random *rnd;
     vector<Cell*> cells;

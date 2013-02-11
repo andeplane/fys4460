@@ -126,7 +126,6 @@ void System::initVelocities() {
 
     double k = 1.0;
     double vx,vy,vz;
-    r_and_v = new double[6*N];
 
     for(int n=0; n<N; n++ ) {
         vx = rnd->nextGauss()*sqrt(k*T);

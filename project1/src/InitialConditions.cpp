@@ -38,8 +38,10 @@ void System::initialize(double dt) {
         printf("%d atoms",N);
         printf("%d cells",(int)cells.size());
         printf("%d cells per dim",cells_z);
-        sort_cells();
+        // atoms.clear();
     }
+
+    calculateAccelerations();
 
     if(rank==0) {
         for(int n=0;n<N;n++) {
@@ -47,6 +49,8 @@ void System::initialize(double dt) {
             atoms[n]->addR(atoms[n]->v*dt);
         }
     }
+
+    calculateAccelerations();
 }
 
 void System::init_cells() {
@@ -97,6 +101,7 @@ void System::init_atoms() {
                     atom->index = atoms.size();
 
                     atoms.push_back(atom);
+                    all_atoms.push_back(atom);
                 }
             }
         }

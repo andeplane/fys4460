@@ -11,6 +11,7 @@ Atom::Atom(System *system_) {
     next = NULL;
     prev = NULL;
     index2 = 0;
+    r_initial = zeros<vec> (3,1);
     r = zeros<vec> (3,1);
     v = zeros<vec> (3,1);
     a = zeros<vec> (3,1);
@@ -45,7 +46,10 @@ void Atom::update_initial_position(const double &rx_, const double &ry_, const d
 }
 
 void Atom::addR(const vec& dr) {
-    r += dr;
+    r(0) += dr(0);
+    r(1) += dr(1);
+    r(2) += dr(2);
+    // r += dr;
     double L = system->L;
 
     for(int i=0;i<3;i++) {
@@ -63,12 +67,16 @@ void Atom::addR(const vec& dr) {
     }
 }
 
-const vec& Atom::distance_to_atom(Atom *atom, const vec &displacement) {
-     dr = r-atom->r + displacement;
-    return dr;
+void Atom::distance_to_atom(Atom *atom, const vec &displacement, double &x, double &y, double &z) {
+    x = r(0)-atom->r(0) + displacement(0);
+    y = r(1)-atom->r(1) + displacement(1);
+    z = r(2)-atom->r(2) + displacement(2);
+
+     // dr = r-atom->r + displacement;
+    // return dr;
 }
 
 double Atom::squaredDistanceFromInitialPosition() {
     dr = r - r_initial;
-    return dot(dr,dr);
+    return dr(0)*dr(0) + dr(1)*dr(1) + dr(2)*dr(2);
 }

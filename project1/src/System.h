@@ -24,9 +24,11 @@ private:
 	void initVelocities();
 	void rescaleVelocities();
 	void calculateAccelerations();
+    void update_velocity_and_move(const double &dt);
 
 public:
     vector<Atom*> atoms;
+    vector<Atom*> all_atoms;
 	int N; 		// Number of atoms
     int number_of_FCC_cells;
 	double T; 	// Temperature

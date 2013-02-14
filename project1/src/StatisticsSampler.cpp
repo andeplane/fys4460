@@ -36,7 +36,7 @@ void StatisticsSampler::calculateTemperature(double t) {
     double T = 0;
 
 	for(int n=0;n<N;n++) {
-        T += dot(system->atoms[n]->v,system->atoms[n]->v);
+        T += system->atoms[n]->v(0)*system->atoms[n]->v(0) + system->atoms[n]->v(1)*system->atoms[n]->v(1) + system->atoms[n]->v(2)*system->atoms[n]->v(2);
 	}
 
     T/=3*N;

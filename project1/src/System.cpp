@@ -22,6 +22,13 @@ System::System(int rank_, int nodes_, double dt, int number_of_FCC_cells_, doubl
     initialize(dt);
 }
 
+void System::update_velocity_and_move(const double &dt) {
+    for(int n=0;n<N;n++) {
+        atoms[n]->v += 0.5*atoms[n]->a*dt;
+        atoms[n]->addR(atoms[n]->v*dt);
+    }
+}
+
 void System::calculateAccelerations() {
 #ifdef MPI_ENABLED
     P = 0;
@@ -77,10 +84,7 @@ void System::calculateAccelerations() {
 
 void System::step(double dt) {
     if(rank == 0) {
-        for(int n=0;n<N;n++) {
-            atoms[n]->v += atoms[n]->a*dt;
-            atoms[n]->addR(atoms[n]->v*dt);
-        }
+        update_velocity_and_move(dt);
     }
 
     calculateAccelerations();

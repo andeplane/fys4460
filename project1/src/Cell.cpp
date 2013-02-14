@@ -14,10 +14,14 @@ Cell::Cell()
 
 void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, double &P, const vec &displacement_vector) {
     double dr_2, dr_6, dr_12, f, potential_energy, dr_12_inv, dr_6_inv;
+    double x,y,z;
 
-    const vec &dr = atom0->distance_to_atom(atom1,displacement_vector);
+    // atom0->distance_to_atom(atom1,displacement_vector,x,y,z);
+    x = atom0->r(0) - atom1->r(0) + displacement_vector(0);
+    y = atom0->r(1) - atom1->r(1) + displacement_vector(1);
+    z = atom0->r(2) - atom1->r(2) + displacement_vector(2);
 
-    dr_2 = dot(dr,dr);
+    dr_2 = x*x + y*y + z*z;
 
     dr_6 = pow(dr_2,3);
     dr_12 = pow(dr_6,2);
@@ -29,10 +33,13 @@ void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, double &P, co
 
     potential_energy = 4*(dr_12_inv - dr_6_inv);
 
-    atom0->a += dr*f;
+    atom0->a(0) += x*f;
+    atom0->a(1) += y*f;
+    atom0->a(2) += z*f;
     atom0->potential_energy += potential_energy;
-    atom1->a -= dr*f;
-
+    atom1->a(0) -= x*f;
+    atom1->a(1) -= y*f;
+    atom1->a(2) -= z*f;
     P += dr_2*f;
 }
 

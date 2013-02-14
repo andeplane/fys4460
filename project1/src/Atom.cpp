@@ -45,6 +45,28 @@ void Atom::update_initial_position(const double &rx_, const double &ry_, const d
     r_initial(2) = rz_;
 }
 
+void Atom::step(const double &dt) {
+    r(0) += v(0)*dt;
+    r(1) += v(1)*dt;
+    r(2) += v(2)*dt;
+
+    double L = system->L;
+
+    for(int i=0;i<3;i++) {
+        if(r(i) >= L) {
+            int factor = r(i) / L;
+            r(i) -= factor*L;
+            r_initial(i) -= factor*L;
+        }
+
+        if(r(i) < 0) {
+            int factor = r(i) / L;
+            r(i) += (factor+1)*L;
+            r_initial(i) = (factor+1)*L;
+        }
+    }
+}
+
 void Atom::addR(const vec& dr) {
     r(0) += dr(0);
     r(1) += dr(1);

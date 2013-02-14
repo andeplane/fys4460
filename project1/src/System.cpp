@@ -18,14 +18,19 @@ System::System(int rank_, int nodes_, double dt, int number_of_FCC_cells_, doubl
     T = T_;
     rank = rank_;
     nodes = nodes_;
+    steepest_decent_at = 100000000;
+    alpha = 1.0;
 
     initialize(dt);
 }
 
 void System::update_velocity_and_move(const double &dt) {
     for(int n=0;n<N;n++) {
-        atoms[n]->v += 0.5*atoms[n]->a*dt;
-        atoms[n]->addR(atoms[n]->v*dt);
+        atoms[n]->v(0) += 0.5*atoms[n]->a(0)*dt;
+        atoms[n]->v(1) += 0.5*atoms[n]->a(1)*dt;
+        atoms[n]->v(2) += 0.5*atoms[n]->a(2)*dt;
+        atoms[n]->step(dt);
+        // atoms[n]->addR(atoms[n]->v*dt);
     }
 }
 
@@ -35,7 +40,9 @@ void System::calculateAccelerations() {
     if(rank==0) {
         // Reset all atom accelerations
         for(int n=0;n<N;n++) {
-            atoms[n]->a.zeros();
+            atoms[n]->a(0) = 0;
+            atoms[n]->a(1) = 0;
+            atoms[n]->a(2) = 0;
             atoms[n]->potential_energy = 0;
         }
         send_particles_to_slaves();
@@ -83,11 +90,24 @@ void System::calculateAccelerations() {
 }
 
 void System::step(double dt) {
-    if(rank == 0) {
-        update_velocity_and_move(dt);
-    }
+    if(steps < steepest_decent_at) {
+        if(rank == 0) {
+            update_velocity_and_move(dt);
+        }
 
-    calculateAccelerations();
+        calculateAccelerations();
+    }
+    else {
+        for(int n=0;n<N;n++) {
+            if(steps == steepest_decent_at) {
+                atoms[n]->v.zeros();
+            }
+
+            atoms[n]->r(0) += atoms[n]->a(0)*alpha;
+            atoms[n]->r(1) += atoms[n]->a(1)*alpha;
+            atoms[n]->r(2) += atoms[n]->a(2)*alpha;
+        }
+    }
 
     t += dt;
     steps++;

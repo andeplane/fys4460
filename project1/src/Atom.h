@@ -34,7 +34,7 @@ public:
     void update_velocity(const double &vx_, const double &vy_, const double &vz_);
     void update_position(const double &rx_, const double &ry_, const double &rz_);
     void update_initial_position(const double &rx_, const double &ry_, const double &rz_);
-
+    void step(const double &dt);
     void addR(const vec &dr);
     void distance_to_atom(Atom *atom, const vec &displacement, double &x, double &y, double &z);
 	double squaredDistanceFromInitialPosition();

@@ -41,6 +41,8 @@ public:
     int nodes;
     ofstream *file;
     ThreadControl *thread_control;
+    int steepest_decent_at;
+    double alpha; // Used in steepest decent
 
     Random *rnd;
     vector<Cell*> cells;

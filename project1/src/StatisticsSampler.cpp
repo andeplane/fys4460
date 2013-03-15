@@ -41,6 +41,8 @@ void StatisticsSampler::calculateTemperature(double t) {
 
     T/=3*N;
 
+    T = unit_converter.temperature_to_SI(T);
+
     fprintf(temperatureFile, "%f %f \n",t, T);
 }
 
@@ -57,7 +59,11 @@ void StatisticsSampler::calculateEnergy(double t) {
 		E += Ek_temp + Ep_temp;
 	}
 
-    // cout << "energy = " << E << endl;
+    // Ek = unit_converter.energy_to_SI(Ek);
+    // Ep = unit_converter.energy_to_SI(Ep);
+    // E = unit_converter.energy_to_SI(E);
+    cout << "I have energy " << E << endl;
+    cout << "I have potential energy " << E << endl;
 
     fprintf(energyFile, "%f %f %f %f \n",t,Ek,Ep,E);
 }

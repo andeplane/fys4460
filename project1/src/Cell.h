@@ -1,26 +1,24 @@
 #pragma once
 
-#include <Atom.h>
 #include <vector>
 #include <armadillo>
-#include <System.h>
 class System;
+class Cell;
+class Atom;
 
-using namespace std;
 using namespace arma;
+using namespace std;
 
 class Cell
 {
 public:
-    Atom *first_atom;
-    Atom *last_atom;
-    int number_of_atoms;
+    System *system;
+    bool is_ghost_cell;
+    bool forces_are_calculated;
     vector<int> cells;
     vector<vec> displacement_vectors;
     vector<Atom*> atoms;
-    int i,j,k,index;
-    bool forces_are_calculated;
-    int initialized;
+    int i,j,k,index, node_id;
 
     Cell();
     void add_atom(Atom *atom);

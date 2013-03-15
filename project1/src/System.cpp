@@ -6,6 +6,7 @@
 #include "System.h"
 #include "InitialConditions.cpp"
 #include <inlines.h>
+#include <settings.h>
 
 using namespace arma;
 using namespace std;
@@ -13,15 +14,11 @@ using namespace std;
 double t = 0;
 int steps = 0;
 
-System::System(int rank_, int nodes_, double dt, int number_of_FCC_cells_, double T_) {
-    number_of_FCC_cells = number_of_FCC_cells_;
-    T = T_;
-    rank = rank_;
-    nodes = nodes_;
-    steepest_decent_at = 100000000;
-    alpha = 1.0;
+System::System(int myid_, Settings *settings_) {
+    myid = myid_;
+    settings = settings_;
 
-    initialize(dt);
+    initialize();
 }
 
 void System::update_velocity_and_move(const double &dt) {
@@ -53,15 +50,25 @@ void System::calculateAccelerations() {
 
     ThreadNode &node = thread_control->nodes[rank];
 
-    for(set<int>::iterator it=node.connected_cells.begin(); it!= node.connected_cells.end();it++) {
-        int cell_index = *it;
-        cells[cell_index]->reset();
+    for(int c=0;c<cells.size();c++) {
+        cells[c]->reset();
     }
 
+    //for(set<int>::iterator it=node.connected_cells.begin(); it!= node.connected_cells.end();it++) {
+   //     int cell_index = *it;
+    //    cells[cell_index]->reset();
+    //}
+
+    for(int c=0;c<cells.size();c++) {
+        cells[c]->calculate_forces(this);
+    }
+
+    /*
     for(set<int>::iterator it=node.owned_cells.begin(); it!= node.owned_cells.end();it++) {
         int cell_index = *it;
         cells[cell_index]->calculate_forces(this);
     }
+    */
 
     P /= 3*V;
 
@@ -99,14 +106,28 @@ void System::step(double dt) {
     }
     else {
         for(int n=0;n<N;n++) {
-            if(steps == steepest_decent_at) {
-                atoms[n]->v.zeros();
-            }
+            atoms[n]->v(0) = atoms[n]->a(0);
+            atoms[n]->v(1) = atoms[n]->a(1);
+            atoms[n]->v(2) = atoms[n]->a(2);
 
-            atoms[n]->r(0) += atoms[n]->a(0)*alpha;
-            atoms[n]->r(1) += atoms[n]->a(1)*alpha;
-            atoms[n]->r(2) += atoms[n]->a(2)*alpha;
+            atoms[n]->step(alpha);
+
+            atoms[n]->v(0) = 0;
+            atoms[n]->v(1) = 0;
+            atoms[n]->v(2) = 0;
         }
+
+        calculateAccelerations();
+        double Fx = 0;
+        double Fy = 0;
+        double Fz = 0;
+        for(int n=0;n<N;n++) {
+            Fx += 0.5*abs(atoms[n]->a(0));
+            Fy += 0.5*abs(atoms[n]->a(1));
+            Fz += 0.5*abs(atoms[n]->a(2));
+        }
+
+        cout << "Total force: " << Fx/N << ", " << Fy/N << ", " << Fz/N << endl;
     }
 
     t += dt;

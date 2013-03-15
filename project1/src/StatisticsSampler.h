@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "System.h"
 #include <fstream>
+#include <unitconverter.h>
 
 class StatisticsSampler {
 private:
@@ -14,6 +15,7 @@ public:
 	bool energy;
 	bool printVelocities;
 	bool diffusionConstant;
+    UnitConverter unit_converter;
 
 	FILE *velocityFile;
 	FILE *temperatureFile;

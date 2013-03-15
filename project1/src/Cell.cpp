@@ -1,16 +1,16 @@
 #include "Cell.h"
+
+#include <Atom.h>
 #include <cstddef>
 #include <inlines.h>
 #include <iostream>
+#include <System.h>
 
 Cell::Cell()
 {
-    initialized = 1337;
-
     reset();
     reset_atom_list();
  }
-
 
 void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, double &P, const vec &displacement_vector) {
     double dr_2, dr_6, dr_12, f, potential_energy, dr_12_inv, dr_6_inv;

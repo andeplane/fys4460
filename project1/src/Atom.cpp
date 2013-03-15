@@ -7,14 +7,10 @@ using namespace std;
 int atom_count = 0;
 
 Atom::Atom(System *system_) {
-    initialized = true;
-    next = NULL;
-    prev = NULL;
-    index2 = 0;
-    r_initial = zeros<vec> (3,1);
-    r = zeros<vec> (3,1);
-    v = zeros<vec> (3,1);
-    a = zeros<vec> (3,1);
+    r_initial = NULL;
+    r = NULL;
+    v = NULL;
+    a = NULL;
 
     mass = 1; // 39.948;         // MD units
     type = 0;
@@ -27,19 +23,19 @@ Atom::~Atom() {
 
 }
 
-void Atom::update_velocity(const double &vx_, const double &vy_, const double &vz_) {
+void Atom::set_velocity(const double &vx_, const double &vy_, const double &vz_) {
     v(0) = vx_;
     v(1) = vy_;
     v(2) = vz_;
 }
 
-void Atom::update_position(const double &rx_, const double &ry_, const double &rz_) {
+void Atom::set_position(const double &rx_, const double &ry_, const double &rz_) {
     r(0) = rx_;
     r(1) = ry_;
     r(2) = rz_;
 }
 
-void Atom::update_initial_position(const double &rx_, const double &ry_, const double &rz_) {
+void Atom::set_initial_position(const double &rx_, const double &ry_, const double &rz_) {
     r_initial(0) = rx_;
     r_initial(1) = ry_;
     r_initial(2) = rz_;

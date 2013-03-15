@@ -1,15 +1,64 @@
 #include <System.h>
-#ifdef MPI_ENABLED
+#include <unitconverter.h>
+#include <settings.h>
+
 #include <mpi.h>
-#endif
 // #define UNIFORMVELOCITY
 
 double vmax = 8;
 
+void calc_stuff(System *system) {
+    double dr_2, dr_6, dr_12, f, potential_energy, dr_12_inv, dr_6_inv;
+    double x,y,z;
+    double L = system->L;
+    int N = system->N;
+    Atom *atom0, *atom1;
+    for(int i=0;i<N;i++) {
+        atom0 = system->atoms[i];
+        for(int j=i+1;j<N;j++) {
+            atom1 = system->atoms[j];
+            // atom0->distance_to_atom(atom1,displacement_vector,x,y,z);
+            x = atom0->r(0) - atom1->r(0);
+            y = atom0->r(1) - atom1->r(1);
+            z = atom0->r(2) - atom1->r(2);
 
-void System::initialize(double dt) {
-    rnd = new Random(-rank - 1);
-    N = 0;
+            if(x>L/2) {
+                x -= L;
+            }
+
+            if(y>L/2) {
+                y -= L;
+            }
+
+            if(z>L/2) {
+                z -= L;
+            }
+
+            dr_2 = x*x + y*y + z*z;
+            if(dr_2>9) continue;
+
+            dr_6 = pow(dr_2,3);
+            dr_12 = pow(dr_6,2);
+            dr_12_inv = 1.0/dr_12;
+            dr_6_inv = 1.0/dr_6;
+
+
+            f = 24*(2.0*dr_12_inv-dr_6_inv)/dr_2;
+
+            potential_energy = 4*(dr_12_inv - dr_6_inv);
+
+            atom0->potential_energy += potential_energy;
+        }
+    }
+}
+
+void System::initialize() {
+    rnd = new Random(-(myid+1));
+    double L = 1.54478707783;
+
+    Lx = settings->unit_cells_x*L;
+    Ly = settings->unit_cells_y*L;
+    Lz = settings->unit_cells_z*L;
 
     if(rank == 0) {
         init_atoms();
@@ -41,12 +90,27 @@ void System::initialize(double dt) {
         // atoms.clear();
     }
 
-    calculateAccelerations();
+    UnitConverter uc;
+    // calculateAccelerations();
+    calc_stuff(this);
+
+    double E = 0;
+    for(int n=0;n<N;n++) {
+        E += atoms[n]->potential_energy;
+    }
+    cout << "Potential energy: " << E << endl;
+    E /= N;
+    double E_SI = uc.energy_to_SI(E);
+
+    cout << "energy per particle: " << E << endl;
+    cout << "energy per particle (SI): " << E_SI << endl;
+
+    exit(0);
 
     if(rank==0) {
         for(int n=0;n<N;n++) {
             atoms[n]->v += 0.5*atoms[n]->a*dt;
-            atoms[n]->addR(atoms[n]->v*dt);
+            // atoms[n]->addR(atoms[n]->v*dt);
         }
     }
 
@@ -76,7 +140,6 @@ void System::init_atoms() {
 	printf("Initializing FCC lattice...");
 
     double b = 1.545;
-
 
     double xCell[4] = {0, 0.5, 0.5, 0};
     double yCell[4] = {0, 0.5, 0, 0.5};

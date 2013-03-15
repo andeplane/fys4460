@@ -20,7 +20,10 @@ SOURCES += \
     threadcontrol.cpp \
     CVector.cpp \
     CUtil.cpp \
-    CMath.cpp
+    CMath.cpp \
+    unitconverter.cpp \
+    settings.cpp \
+    dummycell.cpp
 
 HEADERS += \
     System.h \
@@ -36,7 +39,9 @@ HEADERS += \
     CIniFile.h \
     CMatrix.h \
     CMath.h \
-    Stdafx.h
+    Stdafx.h \
+    unitconverter.h \
+    settings.h
 
 mac {
     CONFIG -= app_bundle

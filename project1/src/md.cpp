@@ -26,35 +26,9 @@ int main(int args, char *argv[]) {
 
     System *system = new System(my_rank, settings);
 
-    system->alpha = alpha;
-    system->steepest_decent_at = steepest_decent_at;
-
-    StatisticsSampler *sampler = NULL;
-    ofstream *file = new ofstream;
-
-    if(my_rank == 0) {
-        sampler = new StatisticsSampler(system);
-    }
-
-    double t = 0;
-
-    // Thermostat thermostat(1.0,dt*20, dt);
-
 	for(int i=0;i<timesteps;i++) {
-		t+=dt;
-        system->step(dt);
-
-        if(my_rank == 0) {
-            // if(timesteps < 500) thermostat.apply(system->atoms);
-            sampler->sample(t);
-
-            if(print_positions) {
-                system->printPositionsToFile(file);
-            }
-        }
+        system->step();
 	}
-	
-    if(my_rank == 0) file->close();
 
     MPI_Finalize();
 

@@ -8,18 +8,17 @@
 
 Cell::Cell()
 {
+    num_atoms = 0;
     reset();
-    reset_atom_list();
  }
 
-void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, double &P, const vec &displacement_vector) {
+void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, const vec &displacement_vector) {
     double dr_2, dr_6, dr_12, f, potential_energy, dr_12_inv, dr_6_inv;
     double x,y,z;
 
-    // atom0->distance_to_atom(atom1,displacement_vector,x,y,z);
-    x = atom0->r(0) - atom1->r(0) + displacement_vector(0);
-    y = atom0->r(1) - atom1->r(1) + displacement_vector(1);
-    z = atom0->r(2) - atom1->r(2) + displacement_vector(2);
+    x = atom0->r[0] - atom1->r[0] + displacement_vector[0];
+    y = atom0->r[1] - atom1->r[1] + displacement_vector[1];
+    z = atom0->r[2] - atom1->r[2] + displacement_vector[2];
 
     dr_2 = x*x + y*y + z*z;
 
@@ -28,50 +27,44 @@ void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, double &P, co
     dr_12_inv = 1.0/dr_12;
     dr_6_inv = 1.0/dr_6;
 
-
     f = 24*(2.0*dr_12_inv-dr_6_inv)/dr_2;
 
     potential_energy = 4*(dr_12_inv - dr_6_inv);
 
-    atom0->a(0) += x*f;
-    atom0->a(1) += y*f;
-    atom0->a(2) += z*f;
+    atom0->a[0] += x*f;
+    atom0->a[1] += y*f;
+    atom0->a[2] += z*f;
     atom0->potential_energy += potential_energy;
-    atom1->a(0) -= x*f;
-    atom1->a(1) -= y*f;
-    atom1->a(2) -= z*f;
-    P += dr_2*f;
+    atom1->a[0] -= x*f;
+    atom1->a[1] -= y*f;
+    atom1->a[2] -= z*f;
 }
 
 void Cell::calculate_forces(System *system) {
-    Cell *cell;
-    Atom *atom0, *atom1;
-    const vec zero_vector = zeros<vec>(3,1);
-
     for(int c=0;c<cells.size();c++) {
-        cell = system->cells[cells[c]];
-
+        Cell *cell = system->cells[cells[c]];
         if(cell->forces_are_calculated) continue;
 
         const vec& displacement_vector = displacement_vectors[c];
 
         for(int k=0;k<cell->atoms.size();k++) {
-            atom1 = cell->atoms[k];
+            Atom *atom1 = cell->atoms[k];
 
             for(int i=0;i<atoms.size();i++) {
-                atom0 = atoms[i];
-                calculate_force_between_atoms(atom0, atom1, system->P, displacement_vector);
+                Atom *atom0 = atoms[i];
+                calculate_force_between_atoms(atom0, atom1, displacement_vector);
             }
         }
     }
+
+    const vec zero_vector = zeros<vec>(3,1);
 
     for(int i=0;i<atoms.size();i++) {
         atom0 = atoms[i];
 
         for(int j=i+1;j<atoms.size();j++) {
-
             atom1 = atoms[j];
-            calculate_force_between_atoms(atom0, atom1, system->P, zero_vector);
+            calculate_force_between_atoms(atom0, atom1, zero_vector);
         }
     }
 
@@ -93,9 +86,9 @@ void Cell::find_neighbours(const int &c_x, const int &c_y, const int &c_z, Syste
 
                 vec displacement = zeros<vec>(3,1);
 
-                displacement(0) = system->L*( -(di_p < di+i) + (di_p > di+i) );
-                displacement(1) = system->L*( -(dj_p < dj+j) + (dj_p > dj+j) );
-                displacement(2) = system->L*( -(dk_p < dk+k) + (dk_p > dk+k) );
+                displacement[0] = system->Lx*( -(di_p < di+i) + (di_p > di+i) );
+                displacement[1] = system->Ly*( -(dj_p < dj+j) + (dj_p > dj+j) );
+                displacement[2] = system->Lz*( -(dk_p < dk+k) + (dk_p > dk+k) );
 
                 cells.push_back(cell_index);
                 displacement_vectors.push_back(displacement);
@@ -106,55 +99,22 @@ void Cell::find_neighbours(const int &c_x, const int &c_y, const int &c_z, Syste
 
 void Cell::add_atom(Atom *atom) {
     atoms.push_back(atom);
-    number_of_atoms++;
-    /*
-    if(first_atom == NULL) {
-        first_atom = atom;
-        last_atom = atom;
-
-        atom->prev = NULL;
-        atom->next = NULL;
-    }
-    else {
-        last_atom->next = atom;
-        last_atom = atom;
-
-        atom->prev = last_atom;
-        atom->next = NULL;
-    }
-
-    number_of_atoms++;
-    */
+    atom->index_in_cell = num_atoms;
+    atom->cell_index = index;
+    num_atoms++;
 }
 
 void Cell::remove_atom(Atom *atom) {
-    /*
-    if(first_atom == atom) {
-        first_atom = atom->next;
+    if(num_atoms > 1) {
+        // Move the last molecule over here
+        atoms[atom->index_in_cell] = atoms[num_atoms-1];
+        atoms[atom->index_in_cell]->index_in_cell = atom->index_in_cell;
+        atoms.erase(atoms.begin()+num_atoms-1);
+    } else {
+        atoms.erase(atoms.begin());
     }
-    else if(last_atom == atom) {
-        last_atom = atom->prev;
-    }
-
-    if(atom->prev != NULL) atom->prev->next = atom->next;
-    if(atom->next != NULL) atom->next->prev = atom->prev;
-
-    atom->next = NULL;
-    atom->prev = NULL;
-
-    number_of_atoms--;
-    */
 }
 
 void Cell::reset() {
     forces_are_calculated = false;
-}
-
-void Cell::reset_atom_list() {
-    atoms.clear();
-    number_of_atoms = 0;
-    /*
-    first_atom = last_atom = NULL;
-    number_of_atoms = 0;
-    */
 }

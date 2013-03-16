@@ -16,6 +16,8 @@ public:
     double *v;
     double *r_initial;
     double *a;
+    int index_in_cell;
+    int cell_index;
 
     double vx, vy, vz, ax,ay,az, rx,ry,rz, r0x,r0y,r0z;
 

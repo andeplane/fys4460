@@ -18,14 +18,14 @@ public:
     vector<int> cells;
     vector<vec> displacement_vectors;
     vector<Atom*> atoms;
-    int i,j,k,index, node_id;
+    vector<Atom*> new_atoms; // To be distributed to other nodes
+    int i,j,k,index, node_id, num_atoms;
 
     Cell();
     void add_atom(Atom *atom);
     void remove_atom(Atom *atom);
-    void calculate_force_between_atoms(Atom *atom0, Atom *atom1, double &P, const vec &displacement_vector);
+    void calculate_force_between_atoms(Atom *atom0, Atom *atom1, const vec &displacement_vector);
     void reset();
-    void reset_atom_list();
     void calculate_forces(System *system);
     void find_neighbours(const int &c_x, const int &c_y, const int &c_z, System *system);
 };

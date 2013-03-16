@@ -17,11 +17,36 @@ int steps = 0;
 System::System(int myid_, Settings *settings_) {
     myid = myid_;
     settings = settings_;
+    dt = settings->dt;
 
-    initialize();
+    rnd = new Random(-(myid+1));
+    double b = 1.54478707783;
+
+    Lx = settings->unit_cells_x*b;
+    Ly = settings->unit_cells_y*b;
+    Lz = settings->unit_cells_z*b;
+
+    this->thread_control = new ThreadControl();
+    thread_control->setup(this);
+
+    calculateAccelerations();
 }
 
-void System::update_velocity_and_move(const double &dt) {
+void System::update_velocity_and_move() {
+    for(int i=0;i<thread_control->my_cells.size();i++) {
+        Cell *c = thread_control->my_cells[i];
+        for(int n=0;n<c->num_atoms;n++) {
+            Atom *atom = c->atoms[n];
+            atom->step(dt);
+            int cell_index = thread_control->cell_index_from_atom(atom);
+            if(cell_index != atom->cell_index) {
+                Cell *new_cell = thread_control->all_cells[cell_index];
+                new_cell->new_atoms.push_back(atom);
+            }
+        }
+    }
+
+    /*
     for(int n=0;n<N;n++) {
         atoms[n]->v(0) += 0.5*atoms[n]->a(0)*dt;
         atoms[n]->v(1) += 0.5*atoms[n]->a(1)*dt;
@@ -29,71 +54,14 @@ void System::update_velocity_and_move(const double &dt) {
         atoms[n]->step(dt);
         // atoms[n]->addR(atoms[n]->v*dt);
     }
+    */
 }
 
 void System::calculateAccelerations() {
-#ifdef MPI_ENABLED
-    P = 0;
-    if(rank==0) {
-        // Reset all atom accelerations
-        for(int n=0;n<N;n++) {
-            atoms[n]->a(0) = 0;
-            atoms[n]->a(1) = 0;
-            atoms[n]->a(2) = 0;
-            atoms[n]->potential_energy = 0;
-        }
-        send_particles_to_slaves();
+    for(int i=0;i<thread_control->my_cells.size();i++) {
+        Cell *c = thread_control->my_cells[i];
+        c->calculate_forces(this);
     }
-    else {
-        receive_particles_from_master();
-    }
-
-    ThreadNode &node = thread_control->nodes[rank];
-
-    for(int c=0;c<cells.size();c++) {
-        cells[c]->reset();
-    }
-
-    //for(set<int>::iterator it=node.connected_cells.begin(); it!= node.connected_cells.end();it++) {
-   //     int cell_index = *it;
-    //    cells[cell_index]->reset();
-    //}
-
-    for(int c=0;c<cells.size();c++) {
-        cells[c]->calculate_forces(this);
-    }
-
-    /*
-    for(set<int>::iterator it=node.owned_cells.begin(); it!= node.owned_cells.end();it++) {
-        int cell_index = *it;
-        cells[cell_index]->calculate_forces(this);
-    }
-    */
-
-    P /= 3*V;
-
-    if(rank == 0) {
-        receive_particles_back_from_slaves();
-    } else {
-        send_particles_back_to_master();
-    }
-#else
-    P = 0;
-    for(int n=0;n<N;n++) {
-        atoms[n]->a.zeros();
-        atoms[n]->potential_energy = 0;
-    }
-
-    for(int c=0;c<cells.size();c++) {
-        cells[c]->reset();
-    }
-
-    for(int c=0;c<cells.size();c++) {
-        cells[c]->calculate_forces(this);
-    }
-
-    P /= 3*V;
-#endif
 }
 
 void System::step(double dt) {

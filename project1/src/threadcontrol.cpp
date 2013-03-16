@@ -42,6 +42,13 @@ inline int ThreadControl::cell_index_from_ijk(const int &i, const int &j, const 
     return i*cells_y*cells_z + j*cells_z + k;
 }
 
+int ThreadControl::cell_index_from_atom(Atom *atom) {
+    int i = atom->r[0] / system->Lx * cells_x;
+    int j = atom->r[1] / system->Ly * cells_y;
+    int k = atom->r[2] / system->Lz * cells_z;
+    return cell_index_from_ijk(i,j,k);
+}
+
 void ThreadControl::setup_molecules() {
     double b = 1.545;
     UnitConverter *unit_converter = new UnitConverter();
@@ -130,5 +137,9 @@ void ThreadControl::setup_cells() {
                 }
             }
         }
+    }
+
+    for(int i=0;i<my_cells.size();i++) {
+        my_cells[i]->find_neighbours(cells_x,cells_y,cells_z, this);
     }
 }

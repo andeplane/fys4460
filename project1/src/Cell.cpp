@@ -10,6 +10,8 @@ Cell::Cell(System *system_)
 {
     system = system_;
     num_atoms = 0;
+    num_atoms_stored = 0;
+    first_atom = NULL;
     reset();
  }
 
@@ -35,7 +37,7 @@ void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, const vec &di
     atom0->a[0] += x*f;
     atom0->a[1] += y*f;
     atom0->a[2] += z*f;
-    atom0->potential_energy += potential_energy;
+
     atom1->a[0] -= x*f;
     atom1->a[1] -= y*f;
     atom1->a[2] -= z*f;
@@ -43,7 +45,7 @@ void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, const vec &di
 
 void Cell::calculate_forces(System *system) {
     /*
-    for(int c=0;c<cells.size();c++) {
+    for(unsigned long c=0;c<cells.size();c++) {
         Cell *cell = system->cells[cells[c]];
         if(cell->forces_are_calculated) continue;
 
@@ -101,21 +103,60 @@ void Cell::find_neighbours(const int &c_x, const int &c_y, const int &c_z, Syste
 }
 
 void Cell::add_atom(Atom *atom) {
-    atoms.push_back(atom);
-    atom->index_in_cell = num_atoms;
-    atom->cell_index = index;
+    if(num_atoms_stored == 0) {
+        first_atom = atom;
+        last_atom = atom;
+        atom->prev = NULL;
+        atom->next = NULL;
+        num_atoms_stored++;
+        num_atoms++;
+        return;
+    }
+
+    last_atom->next = atom;
+    atom->prev = last_atom;
+    last_atom = atom;
+
+    num_atoms_stored++;
     num_atoms++;
 }
 
 void Cell::remove_atom(Atom *atom) {
-    if(num_atoms > 1) {
-        // Move the last molecule over here
-        atoms[atom->index_in_cell] = atoms[num_atoms-1];
-        atoms[atom->index_in_cell]->index_in_cell = atom->index_in_cell;
-        atoms.erase(atoms.begin()+num_atoms-1);
-    } else {
-        atoms.erase(atoms.begin());
+    if(atom == first_atom && atom == last_atom) {
+        first_atom = NULL;
+        last_atom = NULL;
+        atom->next = NULL;
+        atom->prev = NULL;
+        num_atoms--;
+        num_atoms_stored--;
+        return;
     }
+
+    if(atom == first_atom) {
+        if(atom->next) atom->next->prev = NULL;
+        first_atom = atom->next;
+        atom->next = NULL;
+        atom->prev = NULL;
+        num_atoms--;
+        num_atoms_stored--;
+        return;
+    }
+    if(atom == last_atom) {
+        if(atom->prev) atom->prev->next = NULL;
+        last_atom = atom->prev;
+        atom->next = NULL;
+        atom->prev = NULL;
+        num_atoms--;
+        num_atoms_stored--;
+        return;
+    }
+
+    atom->prev->next = atom->next;
+    if(atom->next) atom->next->prev = atom->prev;
+    atom->next = NULL;
+    atom->prev = NULL;
+    num_atoms_stored--;
+    num_atoms--;
 }
 
 void Cell::reset() {

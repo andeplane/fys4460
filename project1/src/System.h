@@ -17,7 +17,7 @@ class System {
 private:
     void initialize();
 	void calculateAccelerations();
-    void update_velocity_and_move();
+    void move();
 public:
     vector<Atom*> atoms;
     vector<Atom*> all_atoms;
@@ -28,6 +28,6 @@ public:
     double Lx, Ly, Lz;
     double dt;
 
-    void step();
     System(int myid, Settings *settings);
+    void step();
 };

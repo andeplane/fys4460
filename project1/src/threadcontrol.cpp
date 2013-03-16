@@ -33,12 +33,17 @@ void ThreadControl::setup(System *system_) {
     velocities = new double[3*settings->max_particle_num];
     initial_positions = new double[3*settings->max_particle_num];
 
-    mpi_data_receive = new double[9*settings->max_particle_num];
-    mpi_data_send = new double[9*settings->max_particle_num];
-
+    mpi_particles_receive = new double[9*settings->max_particle_num];
+    mpi_particles_send = new double[9*settings->max_particle_num];
+    mpi_cells_send = new int[100000];
+    mpi_cells_receive = new int[100000];
     setup_cells();
     setup_molecules();
+    cout << myid << " has " << num_atoms << " atoms." << endl;
+
     update_ghost_cells();
+
+    cout << myid << " has (with ghost cells) " << num_atoms << " atoms." << endl;
 }
 
 inline int ThreadControl::cell_index_from_ijk(const int &i, const int &j, const int &k) {
@@ -80,23 +85,17 @@ void ThreadControl::setup_molecules() {
 
                     if(cell->node_id == myid) {
                         // This is our atom
-                        Atom *atom = new Atom(system);
+                        Atom *atom = create_new_atom();
 
                         vx = system->rnd->nextGauss()*sqrt(T);
                         vy = system->rnd->nextGauss()*sqrt(T);
                         vz = system->rnd->nextGauss()*sqrt(T);
-                        atom->r = &positions[3*num_atoms];
-                        atom->a = &accelerations[3*num_atoms];
-                        atom->v = &velocities[3*num_atoms];
-                        atom->r_initial = &initial_positions[3*num_atoms];
 
                         atom->set_position(rx,ry,rz);
                         atom->set_initial_position(rx,ry,rz);
                         atom->set_velocity( vx , vy, vz );
 
                         cell->add_atom(atom);
-                        all_atoms.push_back(atom);
-                        num_atoms++;
                     }
                 }
             }
@@ -130,6 +129,7 @@ void ThreadControl::setup_cells() {
                 c->index = cell_index_from_ijk(i,j,k);
                 all_cells.push_back(c);
                 c->is_ghost_cell = false;
+
 
                 if(node_id == myid) {
                     my_cells.push_back(c);
@@ -185,90 +185,143 @@ void ThreadControl::setup_cells() {
 void ThreadControl::update_ghost_cells() {
     MPI_Status status;
 
-    for(unsigned long i=0;i<ghost_cells.size();i++) {
-        Cell *ghost_cell = ghost_cells[i];
-        // Make all these atoms free
-        free_atoms.insert(free_atoms.end(),ghost_cell->atoms.begin(),ghost_cell->atoms.end());
-        ghost_cell->atoms.clear();
-        ghost_cell->num_atoms = 0;
-    }
-
     for(unsigned long i=0;i<neighbor_nodes.size();i++) {
         int node_id = neighbor_nodes[i];
         if(node_id == myid) continue;
+
         int atoms_sent = 0;
         int atoms_received = 0;
+        int cells_sent = 0;
+        int cells_received = 0;
+
         vector<Cell*> &cells = node_ghost_cell_list[node_id];
 
         for(unsigned long c=0;c<cells.size();c++) {
             Cell *cell = cells[c];
-            for(int n=0;n<cell->num_atoms;n++) {
-                Atom *atom = cell->atoms[n];
-                mpi_data_send[9*atoms_sent + 0] = atom->r[0];
-                mpi_data_send[9*atoms_sent + 1] = atom->r[1];
-                mpi_data_send[9*atoms_sent + 2] = atom->r[2];
-                mpi_data_send[9*atoms_sent + 3] = atom->v[0];
-                mpi_data_send[9*atoms_sent + 4] = atom->v[1];
-                mpi_data_send[9*atoms_sent + 5] = atom->v[2];
-                mpi_data_send[9*atoms_sent + 6] = atom->r_initial[0];
-                mpi_data_send[9*atoms_sent + 7] = atom->r_initial[1];
-                mpi_data_send[9*atoms_sent + 8] = atom->r_initial[2];
+            int particles_in_this_cell = 0;
+            Atom *atom = cell->first_atom;
+            while(atom != NULL) {
+                mpi_particles_send[9*atoms_sent + 0] = atom->r[0];
+                mpi_particles_send[9*atoms_sent + 1] = atom->r[1];
+                mpi_particles_send[9*atoms_sent + 2] = atom->r[2];
+                mpi_particles_send[9*atoms_sent + 3] = atom->v[0];
+                mpi_particles_send[9*atoms_sent + 4] = atom->v[1];
+                mpi_particles_send[9*atoms_sent + 5] = atom->v[2];
+                mpi_particles_send[9*atoms_sent + 6] = atom->r_initial[0];
+                mpi_particles_send[9*atoms_sent + 7] = atom->r_initial[1];
+                mpi_particles_send[9*atoms_sent + 8] = atom->r_initial[2];
+                particles_in_this_cell++;
                 atoms_sent++;
+
+                atom = atom->next;
             }
+
+            mpi_cells_send[2*cells_sent+0] = cell->index;
+            mpi_cells_send[2*cells_sent+1] = particles_in_this_cell;
+            cells_sent++;
         }
 
+        cells_sent *= 2; // Two values per cell <cell_index, num_particles>
         atoms_sent *= 9; // 9 doubles each
 
         if(node_id > myid) {
+            MPI_Send(&cells_sent,1,MPI_INT,node_id,100,MPI_COMM_WORLD);
+            MPI_Send(mpi_cells_send,cells_sent,MPI_INT,node_id,100,MPI_COMM_WORLD);
+
             MPI_Send(&atoms_sent,1,MPI_INT,node_id,100,MPI_COMM_WORLD);
-            MPI_Send(mpi_data_send,atoms_sent,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD);
+            MPI_Send(mpi_particles_send,atoms_sent,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD);
+
+            MPI_Recv(&cells_received,1,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
+            MPI_Recv(mpi_cells_receive,cells_received,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
 
             MPI_Recv(&atoms_received,1,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
-            MPI_Recv(mpi_data_receive,atoms_received,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD,&status);
+            MPI_Recv(mpi_particles_receive,atoms_received,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD,&status);
         } else {
+            MPI_Recv(&cells_received,1,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
+            MPI_Recv(mpi_cells_receive,cells_received,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
+
             MPI_Recv(&atoms_received,1,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
-            MPI_Recv(mpi_data_receive,atoms_received,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD,&status);
+            MPI_Recv(mpi_particles_receive,atoms_received,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD,&status);
+
+            MPI_Send(&cells_sent,1,MPI_INT,node_id,100,MPI_COMM_WORLD);
+            MPI_Send(mpi_cells_send,cells_sent,MPI_INT,node_id,100,MPI_COMM_WORLD);
 
             MPI_Send(&atoms_sent,1,MPI_INT,node_id,100,MPI_COMM_WORLD);
-            MPI_Send(mpi_data_send,atoms_sent,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD);
+            MPI_Send(mpi_particles_send,atoms_sent,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD);
         }
 
-        atoms_received /= 9; // Each atom has 9 doubles from mpi_sendrecv
+        cells_received /= 2; // 2 ints per cell
 
         double rx,ry,rz,vx,vy,vz,rx_initial,ry_initial,rz_initial;
-        int cell_index;
+        int new_particles = 0;
 
-        for(int j=0;j<atoms_received;j++) {
-            Atom *atom;
-            if(free_atoms.size() > 0) {
-                atom = free_atoms.back();
-                free_atoms.pop_back();
-            } else {
-                atom = new Atom(system);
-                atom->r = &positions[3*num_atoms];
-                atom->a = &accelerations[3*num_atoms];
-                atom->v = &velocities[3*num_atoms];
-                atom->r_initial = &initial_positions[3*num_atoms];
+        for(int j=0;j<cells_received;j++) {
+            int cell_index = mpi_cells_receive[2*j+0];
+            int particles_in_this_cell = mpi_cells_receive[2*j+1];
 
-                all_atoms.push_back(atom);
-                num_atoms++;
+            Cell *cell = all_cells[cell_index];
+            Atom *atom = cell->first_atom;
+            cell->num_atoms = particles_in_this_cell;
+            if(cell->num_atoms_stored < particles_in_this_cell) {
+
             }
 
-            rx = mpi_data_receive[9*j + 0];
-            ry = mpi_data_receive[9*j + 1];
-            rz = mpi_data_receive[9*j + 2];
-            vx = mpi_data_receive[9*j + 3];
-            vy = mpi_data_receive[9*j + 4];
-            vz = mpi_data_receive[9*j + 5];
-            rx_initial = mpi_data_receive[9*j + 6];
-            ry_initial = mpi_data_receive[9*j + 7];
-            rz_initial = mpi_data_receive[9*j + 8];
+            for(int k=0;k<particles_in_this_cell;k++) {
+                if(atom == NULL) {
+                    // Cell doesn't have any free atoms
+                    if(free_atoms.size() > 0) {
+                        atom = free_atoms.back();
+                        free_atoms.pop_back();
+                    } else {
+                        atom = create_new_atom();
+                    }
 
-            atom->set_position(rx,ry,rz);
-            atom->set_initial_position(rx_initial,ry_initial,rz_initial);
-            atom->set_velocity(vx , vy, vz);
-            cell_index = cell_index_from_atom(atom);
-            ((Cell*)all_cells[cell_index])->add_atom(atom);
+                    cell->add_atom(atom);
+                }
+
+                rx 		   = mpi_particles_receive[9*new_particles + 0];
+                ry 		   = mpi_particles_receive[9*new_particles + 1];
+                rz 		   = mpi_particles_receive[9*new_particles + 2];
+                vx 		   = mpi_particles_receive[9*new_particles + 3];
+                vy 		   = mpi_particles_receive[9*new_particles + 4];
+                vz 		   = mpi_particles_receive[9*new_particles + 5];
+                rx_initial = mpi_particles_receive[9*new_particles + 6];
+                ry_initial = mpi_particles_receive[9*new_particles + 7];
+                rz_initial = mpi_particles_receive[9*new_particles + 8];
+
+                atom->set_position(rx,ry,rz);
+                atom->set_initial_position(rx_initial,ry_initial,rz_initial);
+                atom->set_velocity(vx , vy, vz);
+                atom->set_acceleration(0,0,0);
+
+                new_particles++;
+                atom = atom->next;
+            }
         }
     }
+}
+
+Atom *ThreadControl::create_new_atom() {
+    Atom *atom = new Atom(system);
+    atom->r = &positions[3*num_atoms];
+    atom->a = &accelerations[3*num_atoms];
+    atom->v = &velocities[3*num_atoms];
+    atom->r_initial = &initial_positions[3*num_atoms];
+    num_atoms++;
+
+    return atom;
+}
+
+void ThreadControl::reset_forces() {
+    /*
+    for(unsigned long i=0;i<my_cells.size();i++) {
+        Cell *cell = my_cells[i];
+        for(unsigned long n=0;n<cell->atoms.size();n++) {
+            Atom *atom = cell->atoms[n];
+            atom->a[0] = 0;
+            atom->a[1] = 0;
+            atom->a[2] = 0;
+        }
+    }
+    */
 }

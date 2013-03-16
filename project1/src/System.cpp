@@ -32,24 +32,29 @@ System::System(int myid_, Settings *settings_) {
     thread_control->setup(this);
     MPI_Finalize();
     exit(0);
-    // calculateAccelerations();
+    calculateAccelerations();
 }
 
-void System::update_velocity_and_move() {
+void System::move() {
     /*
     for(int i=0;i<thread_control->my_cells.size();i++) {
         Cell *c = thread_control->my_cells[i];
+
         for(int n=0;n<c->num_atoms;n++) {
             Atom *atom = c->atoms[n];
             atom->step(dt);
+
             int cell_index = thread_control->cell_index_from_atom(atom);
             if(cell_index != atom->cell_index) {
                 Cell *new_cell = thread_control->all_cells[cell_index];
+                Cell *old_cell = thread_control->all_cells[atom->cell_index];
                 new_cell->new_atoms.push_back(atom);
+                old_cell->remove_atom(atom);
             }
         }
     }
 
+    /*
     for(int n=0;n<N;n++) {
         atoms[n]->v(0) += 0.5*atoms[n]->a(0)*dt;
         atoms[n]->v(1) += 0.5*atoms[n]->a(1)*dt;
@@ -62,13 +67,13 @@ void System::update_velocity_and_move() {
 
 void System::calculateAccelerations() {
     /*
-    for(int i=0;i<thread_control->my_cells.size();i++) {
-        Cell *c = thread_control->my_cells[i];
-        c->calculate_forces(this);
+    for(unsigned long i=0;i<thread_control->my_cells.size();i++) {
+        Cell *cell = thread_control->my_cells[i];
+        cell->calculate_forces(this);
     }
     */
 }
 
 void System::step() {
-
+    move();
 }

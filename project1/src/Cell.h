@@ -12,13 +12,14 @@ class Cell
 {
 public:
     System *system;
+    Atom *first_atom;
+    Atom *last_atom;
     bool is_ghost_cell;
     bool forces_are_calculated;
     vector<int> cells;
     vector<vec> displacement_vectors;
-    vector<Atom*> atoms;
     vector<Atom*> new_atoms; // To be distributed to other nodes
-    int i,j,k,index, node_id, num_atoms;
+    int i,j,k,index, node_id, num_atoms_stored, num_atoms;
 
     Cell(System *system_);
     void add_atom(Atom *atom);

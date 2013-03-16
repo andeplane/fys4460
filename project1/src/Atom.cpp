@@ -11,10 +11,11 @@ Atom::Atom(System *system_) {
     r = NULL;
     v = NULL;
     a = NULL;
+    prev = NULL;
+    next = NULL;
 
     mass = 1; // 39.948;         // MD units
     system = system_;
-    potential_energy = 0;
 }
 
 Atom::~Atom() {
@@ -25,6 +26,12 @@ void Atom::set_velocity(const double &vx, const double &vy, const double &vz) {
     v[0] = vx;
     v[1] = vy;
     v[2] = vz;
+}
+
+void Atom::set_acceleration(const double &ax, const double &ay, const double &az) {
+    a[0] = ax;
+    a[1] = ay;
+    a[2] = az;
 }
 
 void Atom::set_position(const double &rx, const double &ry, const double &rz) {

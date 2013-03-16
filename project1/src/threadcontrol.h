@@ -22,10 +22,11 @@ public:
     vector< vector< Cell*> > node_ghost_cell_list;
     vector<int> neighbor_nodes;
     vector<Atom*> free_atoms;
-    vector<Atom*> all_atoms;
 
-    double *mpi_data_receive;
-    double *mpi_data_send;
+    double *mpi_particles_receive;
+    double *mpi_particles_send;
+    int    *mpi_cells_send;
+    int    *mpi_cells_receive;
     double *positions;
     double *accelerations;
     double *velocities;
@@ -40,10 +41,12 @@ public:
     vec3 origo;
 
     ThreadControl();
+    Atom *create_new_atom();
     void setup(System *system);
     void setup_molecules();
     void setup_cells();
     void update_cells();
+    void reset_forces();
 
     void update_ghost_cells();
     void update_local_cells();

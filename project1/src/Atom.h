@@ -10,23 +10,20 @@ using namespace std;
 class Atom {
 public:
 	double mass;
-	double potential_energy;
     double *r;
     double *v;
     double *r_initial;
     double *a;
-    int index_in_cell;
     int cell_index;
-
-    double vx, vy, vz, ax,ay,az, rx,ry,rz, r0x,r0y,r0z;
-
+    Atom *prev, *next;
 	System *system;
 
     Atom(System *system);
     ~Atom();
-    void set_velocity(const double &vx_, const double &vy_, const double &vz_);
-    void set_position(const double &rx_, const double &ry_, const double &rz_);
-    void set_initial_position(const double &rx_, const double &ry_, const double &rz_);
+    void set_velocity(const double &vx, const double &vy, const double &vz);
+    void set_position(const double &rx, const double &ry, const double &rz);
+    void set_initial_position(const double &rx, const double &ry, const double &rz);
+    void set_acceleration(const double &ax, const double &ay, const double &az);
     void step(const double &dt);
 	double squaredDistanceFromInitialPosition();
 };

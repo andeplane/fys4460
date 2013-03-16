@@ -20,6 +20,7 @@ public:
     vector<Cell*> all_cells;
     vector<Cell*> ghost_cells;
     vector< vector< Cell*> > node_ghost_cell_list;
+    vector< vector< Cell*> > node_cell_list;
     vector<int> neighbor_nodes;
     vector<Atom*> free_atoms;
 

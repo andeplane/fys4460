@@ -39,11 +39,7 @@ void ThreadControl::setup(System *system_) {
     mpi_cells_receive = new int[100000];
     setup_cells();
     setup_molecules();
-    cout << myid << " has " << num_atoms << " atoms." << endl;
-
     update_ghost_cells();
-
-    cout << myid << " has (with ghost cells) " << num_atoms << " atoms." << endl;
 }
 
 inline int ThreadControl::cell_index_from_ijk(const int &i, const int &j, const int &k) {
@@ -110,6 +106,7 @@ void ThreadControl::setup_cells() {
     cells_y = settings->nodes_y*settings->unit_cells_y;
     cells_z = settings->nodes_z*settings->unit_cells_z;
     node_ghost_cell_list.resize(num_nodes);
+    node_cell_list.resize(num_nodes);
 
 
     for(int i=0;i<cells_x;i++) {
@@ -130,10 +127,10 @@ void ThreadControl::setup_cells() {
                 all_cells.push_back(c);
                 c->is_ghost_cell = false;
 
-
                 if(node_id == myid) {
                     my_cells.push_back(c);
                 } else if(abs(node_idx - this->idx) <= 1 && abs(node_idy - this->idy) <= 1 && abs(node_idz - this->idz) <= 1) {
+                    node_cell_list[node_id].push_back(c);
                     ghost_cells.push_back(c);
                     c->is_ghost_cell = true;
                 }
@@ -180,6 +177,120 @@ void ThreadControl::setup_cells() {
     }
 
     std::sort (neighbor_nodes.begin(), neighbor_nodes.end());
+}
+
+void ThreadControl::update_cells() {
+    MPI_Status status;
+
+    for(unsigned long i=0;i<neighbor_nodes.size();i++) {
+        int node_id = neighbor_nodes[i];
+        if(node_id == myid) continue;
+
+        int atoms_sent = 0;
+        int atoms_received = 0;
+        int cells_sent = 0;
+        int cells_received = 0;
+
+        vector<Cell*> &cells = node_cell_list[node_id];
+
+        for(unsigned long c=0;c<cells.size();c++) {
+            Cell *cell = cells[c];
+            int particles_in_this_cell = cell->new_atoms.size();
+            for(int i=0;i<particles_in_this_cell;i++) {
+                Atom *atom = cell->new_atoms[i];
+                Cell *old_cell = all_cells[atom->cell_index];
+
+                mpi_particles_send[9*atoms_sent + 0] = atom->r[0];
+                mpi_particles_send[9*atoms_sent + 1] = atom->r[1];
+                mpi_particles_send[9*atoms_sent + 2] = atom->r[2];
+                mpi_particles_send[9*atoms_sent + 3] = atom->v[0];
+                mpi_particles_send[9*atoms_sent + 4] = atom->v[1];
+                mpi_particles_send[9*atoms_sent + 5] = atom->v[2];
+                mpi_particles_send[9*atoms_sent + 6] = atom->r_initial[0];
+                mpi_particles_send[9*atoms_sent + 7] = atom->r_initial[1];
+                mpi_particles_send[9*atoms_sent + 8] = atom->r_initial[2];
+                atoms_sent++;
+
+                old_cell->remove_atom(atom);
+                free_atoms.push_back(atom);
+            }
+
+            cell->new_atoms.clear();
+            mpi_cells_send[2*cells_sent+0] = cell->index;
+            mpi_cells_send[2*cells_sent+1] = particles_in_this_cell;
+            cells_sent++;
+        }
+
+        cells_sent *= 2; // Two values per cell <cell_index, num_particles>
+        atoms_sent *= 9; // 9 doubles each
+
+        if(node_id > myid) {
+            MPI_Send(&cells_sent,1,MPI_INT,node_id,100,MPI_COMM_WORLD);
+            MPI_Send(mpi_cells_send,cells_sent,MPI_INT,node_id,100,MPI_COMM_WORLD);
+
+            MPI_Send(&atoms_sent,1,MPI_INT,node_id,100,MPI_COMM_WORLD);
+            MPI_Send(mpi_particles_send,atoms_sent,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD);
+
+            MPI_Recv(&cells_received,1,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
+            MPI_Recv(mpi_cells_receive,cells_received,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
+
+            MPI_Recv(&atoms_received,1,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
+            MPI_Recv(mpi_particles_receive,atoms_received,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD,&status);
+        } else {
+            MPI_Recv(&cells_received,1,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
+            MPI_Recv(mpi_cells_receive,cells_received,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
+
+            MPI_Recv(&atoms_received,1,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
+            MPI_Recv(mpi_particles_receive,atoms_received,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD,&status);
+
+            MPI_Send(&cells_sent,1,MPI_INT,node_id,100,MPI_COMM_WORLD);
+            MPI_Send(mpi_cells_send,cells_sent,MPI_INT,node_id,100,MPI_COMM_WORLD);
+
+            MPI_Send(&atoms_sent,1,MPI_INT,node_id,100,MPI_COMM_WORLD);
+            MPI_Send(mpi_particles_send,atoms_sent,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD);
+        }
+
+        cells_received /= 2; // 2 ints per cell
+
+        double rx,ry,rz,vx,vy,vz,rx_initial,ry_initial,rz_initial;
+        int new_particles = 0;
+
+        for(int j=0;j<cells_received;j++) {
+            int cell_index = mpi_cells_receive[2*j+0];
+            int new_particles_in_this_cell = mpi_cells_receive[2*j+1];
+
+            Cell *cell = all_cells[cell_index];
+
+            for(int k=0;k<new_particles_in_this_cell;k++) {
+                Atom *atom;
+                if(free_atoms.size() > 0) {
+                    atom = free_atoms.back();
+                    free_atoms.pop_back();
+                } else {
+                    atom = create_new_atom();
+                }
+
+                cell->add_atom(atom);
+
+                rx 		   = mpi_particles_receive[9*new_particles + 0];
+                ry 		   = mpi_particles_receive[9*new_particles + 1];
+                rz 		   = mpi_particles_receive[9*new_particles + 2];
+                vx 		   = mpi_particles_receive[9*new_particles + 3];
+                vy 		   = mpi_particles_receive[9*new_particles + 4];
+                vz 		   = mpi_particles_receive[9*new_particles + 5];
+                rx_initial = mpi_particles_receive[9*new_particles + 6];
+                ry_initial = mpi_particles_receive[9*new_particles + 7];
+                rz_initial = mpi_particles_receive[9*new_particles + 8];
+
+                atom->set_position(rx,ry,rz);
+                atom->set_initial_position(rx_initial,ry_initial,rz_initial);
+                atom->set_velocity(vx , vy, vz);
+                atom->set_acceleration(0,0,0);
+
+                new_particles++;
+            }
+        }
+    }
 }
 
 void ThreadControl::update_ghost_cells() {
@@ -250,7 +361,7 @@ void ThreadControl::update_ghost_cells() {
             MPI_Send(mpi_particles_send,atoms_sent,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD);
         }
 
-        cells_received /= 2; // 2 ints per cell
+        cells_received /= 2; // Two values per cell <cell_index, num_particles>
 
         double rx,ry,rz,vx,vy,vz,rx_initial,ry_initial,rz_initial;
         int new_particles = 0;
@@ -261,10 +372,6 @@ void ThreadControl::update_ghost_cells() {
 
             Cell *cell = all_cells[cell_index];
             Atom *atom = cell->first_atom;
-            cell->num_atoms = particles_in_this_cell;
-            if(cell->num_atoms_stored < particles_in_this_cell) {
-
-            }
 
             for(int k=0;k<particles_in_this_cell;k++) {
                 if(atom == NULL) {

@@ -11,7 +11,7 @@ int main(int args, char *argv[]) {
 		return 0;
 	}
 	int cpus = atoi(argv[1]);
-	double *positions = new double[3*100000];
+	double *positions = new double[9*1000000];
 	ofstream file ("state.xyz", ios::out);
 	
 	ifstream **state_files = new ifstream*[cpus];

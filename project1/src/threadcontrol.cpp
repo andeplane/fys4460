@@ -24,13 +24,9 @@ void ThreadControl::setup(System *system_) {
     idy = (myid/settings->nodes_z) % settings->nodes_y; // Node id in y-direction
     idz = myid % settings->nodes_z; // Node id in z-direction
 
-    cout << "I am node " << myid << " with vector indices: " << idx << " " << idy << " " << idz << endl;
-
     origo[0] = idx*(system->Lx/settings->nodes_x);
     origo[1] = idy*(system->Ly/settings->nodes_y);
     origo[2] = idz*(system->Lz/settings->nodes_z);
-
-    cout << "I am node " << myid << " with origo: " << origo[0] << " " << origo[1] << " " << origo[2] << endl;
 
     positions = new double[3*settings->max_particle_num];
     accelerations = new double[3*settings->max_particle_num];
@@ -40,12 +36,9 @@ void ThreadControl::setup(System *system_) {
     mpi_data_receive = new double[9*settings->max_particle_num];
     mpi_data_send = new double[9*settings->max_particle_num];
 
-    if(myid==0) cout << "Setting up cells..." << endl;
     setup_cells();
-    if(myid==0) cout << "Setting up molecules..." << endl;
     setup_molecules();
-    // if(myid==0) cout << "Updating ghost cells..." << endl;
-    // update_ghost_cells();
+    update_ghost_cells();
 }
 
 inline int ThreadControl::cell_index_from_ijk(const int &i, const int &j, const int &k) {
@@ -71,9 +64,9 @@ void ThreadControl::setup_molecules() {
     double rx,ry,rz,vx,vy,vz;
     num_atoms = 0;
 
-    for(int x = 0; x < settings->unit_cells_x; x++) {
-        for(int y = 0; y < settings->unit_cells_y; y++) {
-            for(int z = 0; z < settings->unit_cells_z; z++) {
+    for(int x = 0; x < cells_x; x++) {
+        for(int y = 0; y < cells_y; y++) {
+            for(int z = 0; z < cells_z; z++) {
                 for(int k = 0; k < 4; k++) {
                     rx = (x+xCell[k]) * b;
                     ry = (y+yCell[k]) * b;
@@ -119,12 +112,14 @@ void ThreadControl::setup_cells() {
     cells_z = settings->nodes_z*settings->unit_cells_z;
     node_ghost_cell_list.resize(num_nodes);
 
+
     for(int i=0;i<cells_x;i++) {
         for(int j=0;j<cells_y;j++) {
             for(int k=0;k<cells_z;k++) {
-                int node_idx = i/settings->unit_cells_x;
-                int node_idy = j/settings->unit_cells_y;
-                int node_idz = k/settings->unit_cells_z;
+                int node_idx = (float)i/cells_x*settings->nodes_x;
+                int node_idy = (float)j/cells_y*settings->nodes_y;
+                int node_idz = (float)k/cells_z*settings->nodes_z;
+
                 int node_id = node_idx*settings->nodes_y*settings->nodes_z + node_idy*settings->nodes_z + node_idz;
 
                 Cell *c = new Cell(system);
@@ -138,7 +133,6 @@ void ThreadControl::setup_cells() {
 
                 if(node_id == myid) {
                     my_cells.push_back(c);
-
                 } else if(abs(node_idx - this->idx) <= 1 && abs(node_idy - this->idy) <= 1 && abs(node_idz - this->idz) <= 1) {
                     ghost_cells.push_back(c);
                     c->is_ghost_cell = true;
@@ -148,7 +142,8 @@ void ThreadControl::setup_cells() {
     }
 
     for(unsigned long i=0;i<all_cells.size();i++) {
-        my_cells[i]->find_neighbours(cells_x,cells_y,cells_z, system);
+        Cell *cell = all_cells[i];
+        cell->find_neighbours(cells_x,cells_y,cells_z, system);
     }
 
     // Create node neighbor list with corresponding cells of interest for each node
@@ -159,9 +154,13 @@ void ThreadControl::setup_cells() {
                 int node_idy = (idy + dj + settings->nodes_y) % settings->nodes_y;
                 int node_idz = (idz + dk + settings->nodes_z) % settings->nodes_z;
                 int node_id = node_idx*settings->nodes_y*settings->nodes_z + node_idy*settings->nodes_z + node_idz;
+                if(node_id == myid) continue;
+
                 if(find(neighbor_nodes.begin(), neighbor_nodes.end(), node_id) == neighbor_nodes.end()) {
                     neighbor_nodes.push_back(node_id);
                 }
+
+                vector<Cell*> &this_node_ghost_cell_list = node_ghost_cell_list[node_id];
 
                 // Loop through all of my cells and see if one of their neighbor cells belong to a neighbor node
                 for(unsigned long i=0;i<my_cells.size();i++) {
@@ -170,7 +169,9 @@ void ThreadControl::setup_cells() {
                         Cell *neighbor_cell = all_cells[my_cell->cells[j]];
                         if(neighbor_cell->node_id == node_id) {
                             // He is our friend, we should give him information from the current cell
-                            node_ghost_cell_list[node_id].push_back(my_cell);
+                            if(find(this_node_ghost_cell_list.begin(), this_node_ghost_cell_list.end(), my_cell) == this_node_ghost_cell_list.end()) {
+                                this_node_ghost_cell_list.push_back(my_cell);
+                            }
                         }
                     }
                 }
@@ -178,11 +179,12 @@ void ThreadControl::setup_cells() {
         }
     }
 
-    // std::sort (neighbor_nodes.begin(), neighbor_nodes.end());
+    std::sort (neighbor_nodes.begin(), neighbor_nodes.end());
 }
 
 void ThreadControl::update_ghost_cells() {
     MPI_Status status;
+
     for(unsigned long i=0;i<ghost_cells.size();i++) {
         Cell *ghost_cell = ghost_cells[i];
         // Make all these atoms free
@@ -193,6 +195,7 @@ void ThreadControl::update_ghost_cells() {
 
     for(unsigned long i=0;i<neighbor_nodes.size();i++) {
         int node_id = neighbor_nodes[i];
+        if(node_id == myid) continue;
         int atoms_sent = 0;
         int atoms_received = 0;
         vector<Cell*> &cells = node_ghost_cell_list[node_id];
@@ -214,7 +217,22 @@ void ThreadControl::update_ghost_cells() {
             }
         }
 
-        MPI_Sendrecv(mpi_data_send,atoms_sent*9,MPI_DOUBLE,node_id,100,mpi_data_receive,atoms_received,MPI_DOUBLE,myid,100,MPI_COMM_WORLD,&status);
+        atoms_sent *= 9; // 9 doubles each
+
+        if(node_id > myid) {
+            MPI_Send(&atoms_sent,1,MPI_INT,node_id,100,MPI_COMM_WORLD);
+            MPI_Send(mpi_data_send,atoms_sent,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD);
+
+            MPI_Recv(&atoms_received,1,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
+            MPI_Recv(mpi_data_receive,atoms_received,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD,&status);
+        } else {
+            MPI_Recv(&atoms_received,1,MPI_INT,node_id,100,MPI_COMM_WORLD,&status);
+            MPI_Recv(mpi_data_receive,atoms_received,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD,&status);
+
+            MPI_Send(&atoms_sent,1,MPI_INT,node_id,100,MPI_COMM_WORLD);
+            MPI_Send(mpi_data_send,atoms_sent,MPI_DOUBLE,node_id,100,MPI_COMM_WORLD);
+        }
+
         atoms_received /= 9; // Each atom has 9 doubles from mpi_sendrecv
 
         double rx,ry,rz,vx,vy,vz,rx_initial,ry_initial,rz_initial;

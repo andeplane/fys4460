@@ -23,10 +23,10 @@ System::System(int myid_, Settings *settings_) {
     rnd = new Random(-(myid+1));
     double b = 1.54478707783;
 
-    Lx = settings->unit_cells_x*b;
-    Ly = settings->unit_cells_y*b;
-    Lz = settings->unit_cells_z*b;
-    cout << "My system will be of size " << Lx << " " << Ly << " " << Lz << endl;
+    Lx = settings->nodes_x*settings->unit_cells_x*b;
+    Ly = settings->nodes_y*settings->unit_cells_y*b;
+    Lz = settings->nodes_z*settings->unit_cells_z*b;
+    if(myid==0) cout << "The system will be of size " << Lx << " " << Ly << " " << Lz << endl;
 
     this->thread_control = new ThreadControl();
     thread_control->setup(this);

@@ -21,10 +21,8 @@ int main(int args, char *argv[]) {
     MPI_Init(&args,&argv) ;
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-    cout << "We have " << numprocs << " processors, I am rank " << myid << endl;
 
     Settings *settings = new Settings("../md.ini");
-    cout << "Settings loaded" << endl;
     System *system = new System(myid, settings);
 
     for(int i=0;i<settings->timesteps;i++) {

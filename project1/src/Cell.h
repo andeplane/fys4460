@@ -3,7 +3,6 @@
 #include <vector>
 #include <armadillo>
 class System;
-class Cell;
 class Atom;
 
 using namespace arma;
@@ -21,7 +20,7 @@ public:
     vector<Atom*> new_atoms; // To be distributed to other nodes
     int i,j,k,index, node_id, num_atoms;
 
-    Cell();
+    Cell(System *system_);
     void add_atom(Atom *atom);
     void remove_atom(Atom *atom);
     void calculate_force_between_atoms(Atom *atom0, Atom *atom1, const vec &displacement_vector);

@@ -1,3 +1,4 @@
+/*
 #include <System.h>
 #include <unitconverter.h>
 #include <settings.h>
@@ -109,12 +110,6 @@ void System::initVelocities() {
     vCM /= N;
 	
     for(int n=0;n<N;n++) {
-        /*
-        vx = r_and_v[6*n+3] - vCM(0);
-        vy = r_and_v[6*n+4] - vCM(1);
-        vz = r_and_v[6*n+5] - vCM(2);
-        */
-        // atoms[n]->update_velocity( vx , vy, vz );
 
         atoms[n]->v -= vCM;
     }
@@ -134,3 +129,4 @@ void System::rescaleVelocities() {
         atoms[n]->v *= lambda;
 	printf("done\n");
 }
+*/

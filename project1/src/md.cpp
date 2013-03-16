@@ -17,16 +17,17 @@ using namespace arma;
 using namespace std;
 
 int main(int args, char *argv[]) {
-    int numprocs = 1, my_rank = 0;
+    int numprocs = 1, myid = 0;
     MPI_Init(&args,&argv) ;
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    cout << "We have " << numprocs << " processors, I am rank " << myid << endl;
 
     Settings *settings = new Settings("../md.ini");
+    cout << "Settings loaded" << endl;
+    System *system = new System(myid, settings);
 
-    System *system = new System(my_rank, settings);
-
-	for(int i=0;i<timesteps;i++) {
+    for(int i=0;i<settings->timesteps;i++) {
         system->step();
 	}
 

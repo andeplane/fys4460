@@ -16,5 +16,5 @@ public:
     int nodes_y;
     int nodes_z;
     int timesteps;
-    bool print_positions;
+    int max_particle_num;
 };

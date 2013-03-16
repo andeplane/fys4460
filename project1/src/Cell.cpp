@@ -6,8 +6,9 @@
 #include <iostream>
 #include <System.h>
 
-Cell::Cell()
+Cell::Cell(System *system_)
 {
+    system = system_;
     num_atoms = 0;
     reset();
  }
@@ -41,6 +42,7 @@ void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, const vec &di
 }
 
 void Cell::calculate_forces(System *system) {
+    /*
     for(int c=0;c<cells.size();c++) {
         Cell *cell = system->cells[cells[c]];
         if(cell->forces_are_calculated) continue;
@@ -69,6 +71,7 @@ void Cell::calculate_forces(System *system) {
     }
 
     forces_are_calculated = true;
+    */
 }
 
 void Cell::find_neighbours(const int &c_x, const int &c_y, const int &c_z, System *system) {
@@ -83,7 +86,6 @@ void Cell::find_neighbours(const int &c_x, const int &c_y, const int &c_z, Syste
                 dk_p = (k+dk+10*c_z)%c_z;
 
                 int cell_index = calculate_cell_index(di_p,dj_p,dk_p,c_x,c_y,c_z);
-
                 vec displacement = zeros<vec>(3,1);
 
                 displacement[0] = system->Lx*( -(di_p < di+i) + (di_p > di+i) );
@@ -95,6 +97,7 @@ void Cell::find_neighbours(const int &c_x, const int &c_y, const int &c_z, Syste
             }
         }
     }
+
 }
 
 void Cell::add_atom(Atom *atom) {

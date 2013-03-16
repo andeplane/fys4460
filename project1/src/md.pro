@@ -22,8 +22,7 @@ SOURCES += \
     CUtil.cpp \
     CMath.cpp \
     unitconverter.cpp \
-    settings.cpp \
-    dummycell.cpp
+    settings.cpp
 
 HEADERS += \
     System.h \
@@ -62,7 +61,7 @@ unix:!mac {
 
 # MPI Settings
 # QMAKE_CXX = mpicxx
-QMAKE_CXX = icc
+QMAKE_CXX = mpic++
 QMAKE_CXX_RELEASE = $$QMAKE_CXX
 QMAKE_CXX_DEBUG = $$QMAKE_CXX
 QMAKE_LINK = $$QMAKE_CXX

@@ -1,3 +1,4 @@
+/*
 #include "thermostat.h"
 #include <vector>
 using namespace std;
@@ -22,3 +23,4 @@ void Thermostat::apply(const vector<Atom*>& atoms) {
         atoms[n]->v *= berendsen_factor;
     }
 }
+*/

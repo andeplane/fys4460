@@ -1,3 +1,4 @@
+/*
 #pragma once
 
 #include "Atom.h"
@@ -31,3 +32,6 @@ public:
 	void calculateVelocities(double t);
 	void calculateDiffusionConstant(double t);
 };
+
+
+*/

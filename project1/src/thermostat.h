@@ -1,3 +1,4 @@
+/*
 #pragma once
 #include <Atom.h>
 
@@ -12,3 +13,4 @@ public:
     void apply(const vector<Atom*>& atoms);
 
 };
+*/

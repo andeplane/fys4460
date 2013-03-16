@@ -9,7 +9,6 @@ using namespace std;
 
 class Atom {
 public:
-	char   type;
 	double mass;
 	double potential_energy;
     double *r;
@@ -29,7 +28,5 @@ public:
     void set_position(const double &rx_, const double &ry_, const double &rz_);
     void set_initial_position(const double &rx_, const double &ry_, const double &rz_);
     void step(const double &dt);
-    void addR(const vec &dr);
-    void distance_to_atom(Atom *atom, const vec &displacement, double &x, double &y, double &z);
 	double squaredDistanceFromInitialPosition();
 };

@@ -1,3 +1,4 @@
+/*
 #include "StatisticsSampler.h"
 #include <armadillo>
 
@@ -109,3 +110,4 @@ void StatisticsSampler::calculateDiffusionConstant(double t) {
     // fprintf(diffusionFile, "Nothing is happening");
 }
 
+*/

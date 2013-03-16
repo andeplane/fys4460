@@ -8,6 +8,7 @@
 
 Cell::Cell(System *system_)
 {
+    awesome_number = 1337;
     system = system_;
     num_atoms = 0;
     num_atoms_stored = 0;
@@ -110,12 +111,14 @@ void Cell::add_atom(Atom *atom) {
         atom->next = NULL;
         num_atoms_stored++;
         num_atoms++;
+        atom->cell_index = this->index;
         return;
     }
 
     last_atom->next = atom;
     atom->prev = last_atom;
     last_atom = atom;
+    atom->cell_index = this->index;
 
     num_atoms_stored++;
     num_atoms++;

@@ -13,15 +13,13 @@
 using namespace arma;
 using namespace std;
 
-double t = 0;
-int steps = 0;
-
 System::System(int myid_, Settings *settings_) {
     myid = myid_;
     settings = settings_;
     dt = settings->dt;
     mdio = new MDIO();
     mdio->setup(this);
+    steps = 0;
 
     rnd = new Random(-(myid+1));
     double b = 1.54478707783;
@@ -33,15 +31,12 @@ System::System(int myid_, Settings *settings_) {
 
     this->thread_control = new ThreadControl();
     thread_control->setup(this);
-    mdio->save_state_to_file_binary();
-    MPI_Finalize();
 
-    exit(0);
-    calculateAccelerations();
+    // calculateAccelerations();
 }
 
 void System::move() {
-    for(int i=0;i<thread_control->my_cells.size();i++) {
+    for(unsigned int i=0;i<thread_control->my_cells.size();i++) {
         Cell *cell = thread_control->my_cells[i];
         Atom *atom = cell->first_atom;
         while(atom != NULL) {
@@ -52,10 +47,12 @@ void System::move() {
                 Cell *new_cell = thread_control->all_cells[cell_index];
                 new_cell->new_atoms.push_back(atom); // We will take care of him later
             }
+
+            atom = atom->next;
         }
     }
-
-    thread_control->update_cells();
+    thread_control->update_cells_local();
+    thread_control->update_cells_mpi();
 }
 
 void System::calculateAccelerations() {
@@ -69,4 +66,5 @@ void System::calculateAccelerations() {
 
 void System::step() {
     move();
+    steps++;
 }

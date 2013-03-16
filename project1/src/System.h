@@ -29,6 +29,7 @@ public:
     int myid;
     double Lx, Ly, Lz;
     double dt;
+    long steps;
 
     System(int myid, Settings *settings);
     void step();

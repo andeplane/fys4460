@@ -10,8 +10,8 @@
 #include <CIniFile.h>
 #include <unitconverter.h>
 #include <settings.h>
-
 #include <mpi.h>
+#include <mdio.h>
 
 using namespace arma;
 using namespace std;
@@ -27,6 +27,7 @@ int main(int args, char *argv[]) {
 
     for(int i=0;i<settings->timesteps;i++) {
         system->step();
+        system->mdio->save_state_to_movie_file();
 	}
 
     MPI_Finalize();

@@ -46,7 +46,8 @@ public:
     void setup(System *system);
     void setup_molecules();
     void setup_cells();
-    void update_cells();
+    void update_cells_mpi();
+    void update_cells_local();
     void reset_forces();
 
     void update_ghost_cells();

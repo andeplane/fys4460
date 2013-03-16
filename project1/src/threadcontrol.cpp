@@ -179,7 +179,22 @@ void ThreadControl::setup_cells() {
     std::sort (neighbor_nodes.begin(), neighbor_nodes.end());
 }
 
-void ThreadControl::update_cells() {
+void ThreadControl::update_cells_local() {
+    for(unsigned long i=0;i<my_cells.size();i++) {
+        Cell *cell = my_cells[i];
+        int atoms_in_this_cell = cell->new_atoms.size();
+
+        for(int n=0;n<atoms_in_this_cell;n++) {
+            Atom *atom = cell->new_atoms[n];
+            Cell *old_cell = all_cells[atom->cell_index];
+            old_cell->remove_atom(atom);
+            cell->add_atom(atom);
+        }
+        cell->new_atoms.clear();
+    }
+}
+
+void ThreadControl::update_cells_mpi() {
     MPI_Status status;
 
     for(unsigned long i=0;i<neighbor_nodes.size();i++) {
@@ -196,8 +211,8 @@ void ThreadControl::update_cells() {
         for(unsigned long c=0;c<cells.size();c++) {
             Cell *cell = cells[c];
             int particles_in_this_cell = cell->new_atoms.size();
-            for(int i=0;i<particles_in_this_cell;i++) {
-                Atom *atom = cell->new_atoms[i];
+            for(int n=0;n<particles_in_this_cell;n++) {
+                Atom *atom = cell->new_atoms[n];
                 Cell *old_cell = all_cells[atom->cell_index];
 
                 mpi_particles_send[9*atoms_sent + 0] = atom->r[0];

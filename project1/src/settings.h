@@ -17,4 +17,7 @@ public:
     int nodes_z;
     int timesteps;
     int max_particle_num;
+    int movie_every_n_frame;
+    bool create_movie;
+
 };

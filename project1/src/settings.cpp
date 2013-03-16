@@ -14,6 +14,8 @@ Settings::Settings(string filename) {
         nodes_z = ini_file.getint("nodes_z");
         timesteps = ini_file.getint("timesteps");
         max_particle_num = ini_file.getint("max_particle_num");
+        movie_every_n_frame = ini_file.getint("movie_every_n_frame");
+        create_movie = ini_file.getbool("create_movie");
     }
     catch (int e) {
         cout << "Could not load settings file." << endl;

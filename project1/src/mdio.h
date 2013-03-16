@@ -1,13 +1,21 @@
 #pragma once
+#include <fstream>
+
 class System;
 class Settings;
+using namespace std;
 
 class MDIO
 {
 public:
     System *system;
     Settings *settings;
+    ofstream *movie_file;
+    double *data;
+    bool movie_file_open;
+
     MDIO();
     void setup(System *system_);
     void save_state_to_file_binary();
+    void save_state_to_movie_file();
 };

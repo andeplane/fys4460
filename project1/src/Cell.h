@@ -11,6 +11,7 @@ using namespace std;
 class Cell
 {
 public:
+    int awesome_number;
     System *system;
     Atom *first_atom;
     Atom *last_atom;

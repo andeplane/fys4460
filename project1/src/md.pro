@@ -22,7 +22,8 @@ SOURCES += \
     CUtil.cpp \
     CMath.cpp \
     unitconverter.cpp \
-    settings.cpp
+    settings.cpp \
+    mdio.cpp
 
 HEADERS += \
     System.h \
@@ -40,7 +41,8 @@ HEADERS += \
     CMath.h \
     Stdafx.h \
     unitconverter.h \
-    settings.h
+    settings.h \
+    mdio.h
 
 mac {
     CONFIG -= app_bundle

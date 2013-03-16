@@ -8,6 +8,7 @@
 #include <inlines.h>
 #include <settings.h>
 #include <mpi.h>
+#include <mdio.h>
 
 using namespace arma;
 using namespace std;
@@ -19,6 +20,8 @@ System::System(int myid_, Settings *settings_) {
     myid = myid_;
     settings = settings_;
     dt = settings->dt;
+    mdio = new MDIO();
+    mdio->setup(this);
 
     rnd = new Random(-(myid+1));
     double b = 1.54478707783;
@@ -30,7 +33,9 @@ System::System(int myid_, Settings *settings_) {
 
     this->thread_control = new ThreadControl();
     thread_control->setup(this);
+    mdio->save_state_to_file_binary();
     MPI_Finalize();
+
     exit(0);
     calculateAccelerations();
 }

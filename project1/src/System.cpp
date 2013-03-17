@@ -45,6 +45,9 @@ void System::move() {
 
             int cell_index = thread_control->cell_index_from_atom(atom);
             if(cell_index != atom->cell_index) {
+                if(cell_index < 0) {
+                    cout << "Atom " << atom->index << " is weird. R: " << atom->r[0] << " " << atom->r[1] << " " << atom->r[2] << endl;
+                }
                 Cell *new_cell = thread_control->all_cells[cell_index];
                 new_cell->new_atoms.push_back(atom); // We will take care of him later
             }
@@ -83,18 +86,18 @@ void System::calculate_accelerations() {
 
 void System::step() {
     move();
-    calculate_accelerations();
-    kick();
 
     double t0 = MPI_Wtime();
-    // if(steps>1000) cout << "Updating local cells..." << endl;
     thread_control->update_cells_local();
-    // if(steps>1000) cout << "Updating mpi cells..." << endl;
     thread_control->update_cells_mpi();
-    // if(steps>1000) cout << "Updating mpi ghost cells..." << endl;
     thread_control->update_ghost_cells();
     double t1 = MPI_Wtime();
     comm_time += t1-t0;
+
+    calculate_accelerations();
+    // kick();
+
+
     steps++;
 
     if(myid==0 && !(steps % 100)){

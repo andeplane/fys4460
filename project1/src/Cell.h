@@ -20,6 +20,7 @@ public:
     vector<int> cells;
     vector<vec> displacement_vectors;
     vector<Atom*> new_atoms; // To be distributed to other nodes
+    vector<Atom*> atoms;
     int i,j,k,index, node_id, num_atoms_stored, num_atoms;
 
     Cell(System *system_);

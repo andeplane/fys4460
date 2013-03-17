@@ -330,7 +330,7 @@ void ThreadControl::update_ghost_cells() {
         int cells_sent = 0;
         int cells_received = 0;
 
-        vector<Cell*> &cells = node_ghost_cell_list[node_id];
+        vector<Cell*> &cells = node_ghost_cell_list[node_id]; // Ghost cells for this node
 
         for(unsigned long c=0;c<cells.size();c++) {
             Cell *cell = cells[c];

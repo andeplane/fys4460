@@ -3,7 +3,6 @@
 #include "time.h"
 #include <armadillo>
 #include <fstream>
-#include "Atom.h"
 #include "System.h"
 #include "StatisticsSampler.h"
 #include <thermostat.h>
@@ -23,8 +22,8 @@ int main(int args, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
     Settings *settings = new Settings("../md.ini");
-    System *system = new System(myid, settings);
-
+    System *system = new System();
+    system->setup(myid, settings);
     for(int i=0;i<settings->timesteps;i++) {
         system->step();
         system->mdio->save_state_to_movie_file();

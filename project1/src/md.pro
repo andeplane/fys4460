@@ -12,12 +12,8 @@ SOURCES += \
     System.cpp \
     StatisticsSampler.cpp \
     md.cpp \
-    InitialConditions.cpp \
-    Atom.cpp \
     random.cpp \
-    Cell.cpp \
     thermostat.cpp \
-    threadcontrol.cpp \
     CVector.cpp \
     CUtil.cpp \
     CMath.cpp \
@@ -29,11 +25,8 @@ HEADERS += \
     System.h \
     StatisticsSampler.h \
     inlines.h \
-    Atom.h \
     random.h \
-    Cell.h \
     thermostat.h \
-    threadcontrol.h \
     CVector.h \
     CUtil.h \
     CIniFile.h \

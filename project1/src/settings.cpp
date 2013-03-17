@@ -7,6 +7,7 @@ Settings::Settings(string filename) {
         FCC_b = ini_file.getdouble("FCC_b");
         temperature = ini_file.getdouble("temperature");
         dt = ini_file.getdouble("dt");
+        r_cut = ini_file.getdouble("r_cut");
         unit_cells_x = ini_file.getint("unit_cells_x");
         unit_cells_y = ini_file.getint("unit_cells_y");
         unit_cells_z = ini_file.getint("unit_cells_z");
@@ -14,7 +15,7 @@ Settings::Settings(string filename) {
         nodes_y = ini_file.getint("nodes_y");
         nodes_z = ini_file.getint("nodes_z");
         timesteps = ini_file.getint("timesteps");
-        max_particle_num = ini_file.getint("max_particle_num");
+        num_particles_max = ini_file.getint("num_particles_max");
         movie_every_n_frame = ini_file.getint("movie_every_n_frame");
         create_movie = ini_file.getbool("create_movie");
     }

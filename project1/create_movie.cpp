@@ -12,7 +12,7 @@ int main(int args, char *argv[]) {
 	}
 	int cpus = atoi(argv[1]);
 	int timesteps = atoi(argv[2]);
-	double *positions = new double[3*100000];
+	double *positions = new double[3*1000000];
 	ofstream file ("movie.xyz", ios::out);
 	
 	ifstream **movie_files = new ifstream*[cpus];
@@ -26,8 +26,8 @@ int main(int args, char *argv[]) {
 	for(int timestep=0;timestep<timesteps;timestep++) {
 		int num_particles = 0;
 		for(int cpu=0;cpu<cpus;cpu++) { 
-			int N;
-			movie_files[cpu]->read(reinterpret_cast<char*>(&N),sizeof(int));
+			unsigned long N;
+			movie_files[cpu]->read(reinterpret_cast<char*>(&N),sizeof(unsigned long));
 			movie_files[cpu]->read(reinterpret_cast<char*>(&positions[3*num_particles]),3*N*sizeof(double));
 			num_particles += N;
 		}

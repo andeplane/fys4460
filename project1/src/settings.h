@@ -10,6 +10,7 @@ public:
     double temperature;
     double dt;
     double FCC_b;
+    double r_cut;
     int unit_cells_x;
     int unit_cells_y;
     int unit_cells_z;
@@ -17,7 +18,7 @@ public:
     int nodes_y;
     int nodes_z;
     int timesteps;
-    int max_particle_num;
+    int num_particles_max;
     int movie_every_n_frame;
     bool create_movie;
 

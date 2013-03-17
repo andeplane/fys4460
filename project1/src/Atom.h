@@ -14,6 +14,7 @@ public:
     double *v;
     double *r_initial;
     double *a;
+    int index;
     int cell_index;
     Atom *prev, *next;
 	System *system;

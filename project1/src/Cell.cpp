@@ -5,6 +5,7 @@
 #include <inlines.h>
 #include <iostream>
 #include <System.h>
+#include <threadcontrol.h>
 
 Cell::Cell(System *system_)
 {
@@ -16,15 +17,27 @@ Cell::Cell(System *system_)
     reset();
  }
 
+long particle_pairs_cell = 0;
+
 void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, const vec &displacement_vector) {
     double dr_2, dr_6, dr_12, f, potential_energy, dr_12_inv, dr_6_inv;
-    double x,y,z;
+    double dx,dy,dz;
+    particle_pairs_cell += atom0->index + atom1->index;
 
-    x = atom0->r[0] - atom1->r[0] + displacement_vector[0];
-    y = atom0->r[1] - atom1->r[1] + displacement_vector[1];
-    z = atom0->r[2] - atom1->r[2] + displacement_vector[2];
+    dx = atom0->r[0] - atom1->r[0];// + displacement_vector[0];
+    dy = atom0->r[1] - atom1->r[1];// + displacement_vector[1];
+    dz = atom0->r[2] - atom1->r[2];// + displacement_vector[2];
 
-    dr_2 = x*x + y*y + z*z;
+    if(dx>system->Lx/2)  dx -= system->Lx;
+    if(dx<-system->Lx/2) dx += system->Lx;
+
+    if(dy>system->Ly/2)  dy -= system->Ly;
+    if(dy<-system->Ly/2) dy += system->Ly;
+
+    if(dz>system->Lz/2)  dz -= system->Lz;
+    if(dz<-system->Lz/2) dz += system->Lz;
+
+    dr_2 = dx*dx + dy*dy + dz*dz;
 
     dr_6 = pow(dr_2,3);
     dr_12 = pow(dr_6,2);
@@ -35,46 +48,50 @@ void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, const vec &di
 
     potential_energy = 4*(dr_12_inv - dr_6_inv);
 
-    atom0->a[0] += x*f;
-    atom0->a[1] += y*f;
-    atom0->a[2] += z*f;
+    atom0->a[0] += dx*f;
+    atom0->a[1] += dy*f;
+    atom0->a[2] += dz*f;
 
-    atom1->a[0] -= x*f;
-    atom1->a[1] -= y*f;
-    atom1->a[2] -= z*f;
+    atom1->a[0] -= dx*f;
+    atom1->a[1] -= dy*f;
+    atom1->a[2] -= dz*f;
 }
 
 void Cell::calculate_forces(System *system) {
-    /*
+    Atom *atom0, *atom1;
     for(unsigned long c=0;c<cells.size();c++) {
-        Cell *cell = system->cells[cells[c]];
-        if(cell->forces_are_calculated) continue;
+        int my_neighbor_cell_id = cells[c];
+        Cell *my_neighbor_cell = system->thread_control->all_cells[my_neighbor_cell_id];
+        if(my_neighbor_cell->forces_are_calculated) continue;
 
         const vec& displacement_vector = displacement_vectors[c];
 
-        for(int k=0;k<cell->atoms.size();k++) {
-            Atom *atom1 = cell->atoms[k];
-
-            for(int i=0;i<atoms.size();i++) {
-                Atom *atom0 = atoms[i];
+        atom0 = my_neighbor_cell->first_atom;
+        while(atom0 != NULL) {
+            atom1 = first_atom; // This is in my cell
+            while(atom1 != NULL) {
                 calculate_force_between_atoms(atom0, atom1, displacement_vector);
+                atom1 = atom1->next;
             }
+
+            atom0 = atom0->next;
         }
     }
 
     const vec zero_vector = zeros<vec>(3,1);
 
-    for(int i=0;i<atoms.size();i++) {
-        atom0 = atoms[i];
-
-        for(int j=i+1;j<atoms.size();j++) {
-            atom1 = atoms[j];
+    atom0 = first_atom;
+    while(atom0 != NULL) {
+        atom1 = atom0->next;
+        while(atom1 != NULL) {
             calculate_force_between_atoms(atom0, atom1, zero_vector);
+            atom1 = atom1->next;
         }
+        atom0 = atom0->next;
     }
 
     forces_are_calculated = true;
-    */
+    // cout << particle_pairs_cell << endl;
 }
 
 void Cell::find_neighbours(const int &c_x, const int &c_y, const int &c_z, System *system) {
@@ -89,18 +106,20 @@ void Cell::find_neighbours(const int &c_x, const int &c_y, const int &c_z, Syste
                 dk_p = (k+dk+10*c_z)%c_z;
 
                 int cell_index = calculate_cell_index(di_p,dj_p,dk_p,c_x,c_y,c_z);
+                if(cell_index == this->index) continue;
+
                 vec displacement = zeros<vec>(3,1);
 
                 displacement[0] = system->Lx*( -(di_p < di+i) + (di_p > di+i) );
                 displacement[1] = system->Ly*( -(dj_p < dj+j) + (dj_p > dj+j) );
                 displacement[2] = system->Lz*( -(dk_p < dk+k) + (dk_p > dk+k) );
-
-                cells.push_back(cell_index);
-                displacement_vectors.push_back(displacement);
+                if(find(cells.begin(), cells.end(), cell_index) == cells.end()) {
+                    cells.push_back(cell_index);
+                    displacement_vectors.push_back(displacement);
+                }
             }
         }
     }
-
 }
 
 void Cell::add_atom(Atom *atom) {

@@ -45,6 +45,7 @@ void MDIO::save_state_to_movie_file() {
         }
         movie_file->write (reinterpret_cast<char*>(&atoms), sizeof(int));
         movie_file->write (reinterpret_cast<char*>(data), 3*atoms*sizeof(double));
+        movie_file->flush();
     }
 }
 
@@ -88,4 +89,12 @@ void MDIO::save_state_to_file_binary() {
     file.close();
     delete tmp_data;
     delete filename;
+}
+
+void MDIO::finalize() {
+    if(movie_file_open) {
+        movie_file->close();
+    }
+
+    if(system->myid != 0) return;
 }

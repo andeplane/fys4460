@@ -17,11 +17,9 @@ using namespace std;
 class System {
 private:
     void initialize();
-	void calculateAccelerations();
+    void calculate_accelerations();
     void move();
 public:
-    vector<Atom*> atoms;
-    vector<Atom*> all_atoms;
     Settings *settings;
     MDIO *mdio;
     ThreadControl *thread_control;

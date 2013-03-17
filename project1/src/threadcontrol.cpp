@@ -64,14 +64,18 @@ void ThreadControl::setup_molecules() {
     double zCell[4] = {0, 0, 0.5, 0.5};
     double rx,ry,rz,vx,vy,vz;
     num_atoms = 0;
+    int total_unit_cells_x = settings->unit_cells_x*settings->nodes_x;
+    int total_unit_cells_y = settings->unit_cells_y*settings->nodes_y;
+    int total_unit_cells_z = settings->unit_cells_z*settings->nodes_z;
 
-    for(int x = 0; x < cells_x; x++) {
-        for(int y = 0; y < cells_y; y++) {
-            for(int z = 0; z < cells_z; z++) {
+    for(int x = 0; x < total_unit_cells_x; x++) {
+        for(int y = 0; y < total_unit_cells_y; y++) {
+            for(int z = 0; z < total_unit_cells_z; z++) {
                 for(int k = 0; k < 4; k++) {
-                    rx = (x+xCell[k]) * b;
-                    ry = (y+yCell[k]) * b;
-                    rz = (z+zCell[k]) * b;
+
+                    rx = (x+xCell[k]) * b + 0.001;
+                    ry = (y+yCell[k]) * b + 0.001;
+                    rz = (z+zCell[k]) * b + 0.001;
 
                     int cell_x = rx / system->Lx * cells_x;
                     int cell_y = ry / system->Ly * cells_y;
@@ -102,12 +106,19 @@ void ThreadControl::setup_molecules() {
 }
 
 void ThreadControl::setup_cells() {
-    cells_x = settings->nodes_x*settings->unit_cells_x;
-    cells_y = settings->nodes_y*settings->unit_cells_y;
-    cells_z = settings->nodes_z*settings->unit_cells_z;
+    cells_x = system->Lx / 3;
+    cells_y = system->Ly / 3;
+    cells_z = system->Lz / 3;
+
+    int num_cells = cells_x*cells_y*cells_z;
+    if(num_cells == 0) {
+        cout << "Warning, system size is too small. Aborting!" << endl;
+        MPI_Finalize();
+        exit(0);
+    }
+
     node_ghost_cell_list.resize(num_nodes);
     node_cell_list.resize(num_nodes);
-
 
     for(int i=0;i<cells_x;i++) {
         for(int j=0;j<cells_y;j++) {
@@ -429,21 +440,27 @@ Atom *ThreadControl::create_new_atom() {
     atom->a = &accelerations[3*num_atoms];
     atom->v = &velocities[3*num_atoms];
     atom->r_initial = &initial_positions[3*num_atoms];
+
+    atom->index = num_atoms;
     num_atoms++;
+
+    atom->set_acceleration(0,0,0);
+    all_atoms.push_back(atom);
 
     return atom;
 }
 
 void ThreadControl::reset_forces() {
-    /*
-    for(unsigned long i=0;i<my_cells.size();i++) {
-        Cell *cell = my_cells[i];
-        for(unsigned long n=0;n<cell->atoms.size();n++) {
-            Atom *atom = cell->atoms[n];
+    for(unsigned long i=0;i<all_cells.size();i++) {
+        Cell *cell = all_cells[i];
+        cell->forces_are_calculated = false;
+
+        Atom *atom = cell->first_atom;
+        while(atom != NULL) {
             atom->a[0] = 0;
             atom->a[1] = 0;
             atom->a[2] = 0;
+            atom = atom->next;
         }
     }
-    */
 }

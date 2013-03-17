@@ -23,6 +23,7 @@ public:
     vector< vector< Cell*> > node_cell_list;
     vector<int> neighbor_nodes;
     vector<Atom*> free_atoms;
+    vector<Atom*> all_atoms;
 
     double *mpi_particles_receive;
     double *mpi_particles_send;

@@ -9,6 +9,7 @@ public:
     CIniFile ini_file;
     double temperature;
     double dt;
+    double FCC_b;
     int unit_cells_x;
     int unit_cells_y;
     int unit_cells_z;

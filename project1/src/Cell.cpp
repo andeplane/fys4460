@@ -17,13 +17,10 @@ Cell::Cell(System *system_)
     reset();
  }
 
-long particle_pairs_cell = 0;
+double dr_2, dr_6, dr_12, f, potential_energy, dr_12_inv, dr_6_inv;
+double dx,dy,dz;
 
-void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, const vec &displacement_vector) {
-    double dr_2, dr_6, dr_12, f, potential_energy, dr_12_inv, dr_6_inv;
-    double dx,dy,dz;
-    particle_pairs_cell += atom0->index + atom1->index;
-
+inline void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1) {
     dx = atom0->r[0] - atom1->r[0];// + displacement_vector[0];
     dy = atom0->r[1] - atom1->r[1];// + displacement_vector[1];
     dz = atom0->r[2] - atom1->r[2];// + displacement_vector[2];
@@ -46,7 +43,7 @@ void Cell::calculate_force_between_atoms(Atom *atom0, Atom *atom1, const vec &di
 
     f = 24*(2.0*dr_12_inv-dr_6_inv)/dr_2;
 
-    potential_energy = 4*(dr_12_inv - dr_6_inv);
+    // potential_energy = 4*(dr_12_inv - dr_6_inv);
 
     atom0->a[0] += dx*f;
     atom0->a[1] += dy*f;
@@ -64,13 +61,11 @@ void Cell::calculate_forces(System *system) {
         Cell *my_neighbor_cell = system->thread_control->all_cells[my_neighbor_cell_id];
         if(my_neighbor_cell->forces_are_calculated) continue;
 
-        const vec& displacement_vector = displacement_vectors[c];
-
         atom0 = my_neighbor_cell->first_atom;
         while(atom0 != NULL) {
             atom1 = first_atom; // This is in my cell
             while(atom1 != NULL) {
-                calculate_force_between_atoms(atom0, atom1, displacement_vector);
+                calculate_force_between_atoms(atom0, atom1);
                 atom1 = atom1->next;
             }
 
@@ -78,20 +73,17 @@ void Cell::calculate_forces(System *system) {
         }
     }
 
-    const vec zero_vector = zeros<vec>(3,1);
-
     atom0 = first_atom;
     while(atom0 != NULL) {
         atom1 = atom0->next;
         while(atom1 != NULL) {
-            calculate_force_between_atoms(atom0, atom1, zero_vector);
+            calculate_force_between_atoms(atom0, atom1);
             atom1 = atom1->next;
         }
         atom0 = atom0->next;
     }
 
     forces_are_calculated = true;
-    // cout << particle_pairs_cell << endl;
 }
 
 void Cell::find_neighbours(const int &c_x, const int &c_y, const int &c_z, System *system) {

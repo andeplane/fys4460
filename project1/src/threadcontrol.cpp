@@ -54,7 +54,6 @@ int ThreadControl::cell_index_from_atom(Atom *atom) {
 }
 
 void ThreadControl::setup_molecules() {
-    double b = 1.545;
     UnitConverter *unit_converter = new UnitConverter();
 
     double T = unit_converter->temperature_from_SI(settings->temperature);
@@ -73,9 +72,9 @@ void ThreadControl::setup_molecules() {
             for(int z = 0; z < total_unit_cells_z; z++) {
                 for(int k = 0; k < 4; k++) {
 
-                    rx = (x+xCell[k]) * b + 0.001;
-                    ry = (y+yCell[k]) * b + 0.001;
-                    rz = (z+zCell[k]) * b + 0.001;
+                    rx = (x+xCell[k]) * settings->FCC_b;
+                    ry = (y+yCell[k]) * settings->FCC_b;
+                    rz = (z+zCell[k]) * settings->FCC_b;
 
                     int cell_x = rx / system->Lx * cells_x;
                     int cell_y = ry / system->Ly * cells_y;

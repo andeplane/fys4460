@@ -4,6 +4,7 @@ Settings::Settings(string filename) {
     try {
         ini_file.load(filename);
 
+        FCC_b = ini_file.getdouble("FCC_b");
         temperature = ini_file.getdouble("temperature");
         dt = ini_file.getdouble("dt");
         unit_cells_x = ini_file.getint("unit_cells_x");

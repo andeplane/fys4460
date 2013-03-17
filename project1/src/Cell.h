@@ -25,7 +25,7 @@ public:
     Cell(System *system_);
     void add_atom(Atom *atom);
     void remove_atom(Atom *atom);
-    void calculate_force_between_atoms(Atom *atom0, Atom *atom1, const vec &displacement_vector);
+    inline void calculate_force_between_atoms(Atom *atom0, Atom *atom1);
     void reset();
     void calculate_forces(System *system);
     void find_neighbours(const int &c_x, const int &c_y, const int &c_z, System *system);

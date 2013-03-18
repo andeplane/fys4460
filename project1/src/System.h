@@ -9,6 +9,8 @@ class MDIO;
 #include <random.h>
 #include <vector>
 
+#define EMPTY -1
+
 using namespace std;
 
 class System {
@@ -21,35 +23,49 @@ private:
     void mpi_copy();
     void move();
     void set_topology();
+    void init_parameters();
     void create_FCC();
     inline bool atom_did_change_node(double* ri, int ku);
     inline bool atom_should_be_copied(double *ri, int ku);
+    inline void cell_index_from_ijk(const int &i, const int &j, const int &k, unsigned int &cell_index);
+    inline void cell_index_from_vector(unsigned int *mc, unsigned int &cell_index);
 public:
     Settings *settings;
     MDIO *mdio;
     Random *rnd;
 
-    long steps;
-    int myid;
-    int node_index[3];
-    int num_processors[3];
-    int neighbor_nodes[6];
+    unsigned int num_cells_including_ghosts_yz;
+    unsigned int num_cells_including_ghosts_xyz;
+    unsigned long steps;
+    unsigned int myid;
+    unsigned int node_index[3];
+    unsigned int num_processors[3];
+    unsigned int neighbor_nodes[6];
     double shift_vector[6][3];
+    unsigned int mc[3];  // Usually cell index vector
+    unsigned int mc1[3]; // Usually cell index vector
+    double dr[3];
     short my_parity[3];
-    double box_length[3];
-    double box_length_full[3];
+    double cell_length[3];
+    double node_length[3];
+    double system_length[3];
+    unsigned int num_cells_local[3];
+    unsigned int num_cells_including_ghosts[3];
     double *mpi_send_buffer;
     double *mpi_receive_buffer;
     bool *atom_moved;
-    int *move_queue[6];
+    unsigned int *move_queue[6];
+    int *head;
+    int *linked_list;
 
     int num_nodes;
     unsigned long num_atoms_local;
     unsigned long num_atoms_global;
     unsigned long num_atoms_ghost;
-    unsigned long i,j,k,n,m,a,b,c, nx, ny, nz;
+    long i,j,k,n,m,a,b,c, nx, ny, nz;
+    unsigned int cell_index, cell_index_2;
 
-    double r_cut, dt, dt_half;
+    double r_cut, dt, dt_half, potential_energy;
 
     double *positions;
     double *accelerations;

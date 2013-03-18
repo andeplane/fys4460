@@ -19,9 +19,6 @@ System::System() {
 void System::setup(int myid_, Settings *settings_) {
     myid = myid_;
     settings = settings_;
-    dt = settings->dt;
-    dt_half = dt/2;
-    r_cut = settings->r_cut;
     num_atoms_local = 0;
     num_atoms_global = 0;
     num_atoms_ghost = 0;
@@ -34,28 +31,13 @@ void System::setup(int myid_, Settings *settings_) {
     accelerations = new double[3*settings->num_atoms_max];
     velocities = new double[3*settings->num_atoms_max];
     atom_moved = new bool[settings->num_atoms_max];
-    for(i=0;i<6;i++) move_queue[i] = new int[settings->num_atoms_max];
+    linked_list = new int[settings->num_atoms_max];
+    for(i=0;i<6;i++) move_queue[i] = new unsigned int[settings->num_atoms_max];
 
     steps = 0;
     rnd = new Random(-(myid+1));
 
-    num_processors[0] = settings->nodes_x;
-    num_processors[1] = settings->nodes_y;
-    num_processors[2] = settings->nodes_z;
-
-    node_index[0] = myid/(settings->nodes_y*settings->nodes_z);
-    node_index[1] = (myid/settings->nodes_z) % settings->nodes_y;
-    node_index[2] = myid%settings->nodes_z;
-
-    // Size of this node
-    box_length[0] = settings->unit_cells_x*settings->FCC_b;
-    box_length[1] = settings->unit_cells_y*settings->FCC_b;
-    box_length[2] = settings->unit_cells_z*settings->FCC_b;
-
-    for(a=0;a<3;a++) {
-        box_length_full[a] = box_length[a]*num_processors[a];
-        origo[a] = (float)node_index[a] * box_length[a];
-    }
+    init_parameters();
 
     mdio = new MDIO();
     mdio->setup(this);
@@ -65,7 +47,7 @@ void System::setup(int myid_, Settings *settings_) {
     calculate_accelerations();
     half_kick();
 
-    if(myid==0) cout << "System size: " << box_length_full[0] << " " << box_length_full[1] << " " << box_length_full[2] << endl;
+    if(myid==0) cout << "System size: " << system_length[0] << " " << system_length[1] << " " << system_length[2] << endl;
     if(myid==0) cout << "Atoms: " << num_atoms_global << endl;
 }
 
@@ -90,7 +72,7 @@ void System::create_FCC() {
                     r[2] = (z+zCell[k]) * settings->FCC_b - origo[2];
                     bool is_mine = true;
                     for(i=0;i<3;i++) {
-                        if(!(r[i] >= 0 && r[i] < box_length[i])) is_mine = false;
+                        if(!(r[i] >= 0 && r[i] < node_length[i])) is_mine = false;
                     }
 
                     if(is_mine) {
@@ -110,63 +92,36 @@ void System::create_FCC() {
     MPI_Allreduce(&num_atoms_local,&num_atoms_global,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD);
 }
 
-void System::mpi_copy() {
-    MPI_Status status;
+void System::init_parameters() {
+    r_cut = settings->r_cut;
+    dt = settings->dt;
+    dt_half = dt/2;
 
-    int node_id, num_send, num_receive;
-    int new_ghost_atoms = 0;
-    short higher, local_node_id;
-    for(short dimension=0;dimension<3;dimension++) {
-        for (higher=0; higher<2; higher++) move_queue[2*dimension+higher][0] = 0;
-        for(i=0;i<num_atoms_local+new_ghost_atoms;i++) {
-            for(higher=0;higher<2;higher++) {
-                local_node_id = 2*dimension + higher;
-                if (atom_should_be_copied(&positions[3*i],local_node_id)) move_queue[local_node_id][++(move_queue[local_node_id][0])] = i;
-            }
-        }
+    num_processors[0] = settings->nodes_x;
+    num_processors[1] = settings->nodes_y;
+    num_processors[2] = settings->nodes_z;
 
-        /* Loop through higher and lower node in this dimension */
-        for(higher=0;higher<2;higher++) {
-            local_node_id= 2*dimension+higher;
-            node_id = neighbor_nodes[local_node_id];
-            num_send = move_queue[local_node_id][0];
+    node_index[0] = myid/(settings->nodes_y*settings->nodes_z);
+    node_index[1] = (myid/settings->nodes_z) % settings->nodes_y;
+    node_index[2] = myid%settings->nodes_z;
 
-            if (my_parity[dimension] == 0) {
-                MPI_Send(&num_send,1,MPI_INT,node_id,10,MPI_COMM_WORLD);
-                MPI_Recv(&num_receive,1,MPI_INT,MPI_ANY_SOURCE,10,MPI_COMM_WORLD,&status);
-            }
-            else if (my_parity[dimension] == 1) {
-                MPI_Recv(&num_receive,1,MPI_INT,MPI_ANY_SOURCE,10,MPI_COMM_WORLD,&status);
-                MPI_Send(&num_send,1,MPI_INT,node_id,10,MPI_COMM_WORLD);
-            }
-            else num_receive = num_send;
+    // Size of this node
+    node_length[0] = settings->unit_cells_x*settings->FCC_b;
+    node_length[1] = settings->unit_cells_y*settings->FCC_b;
+    node_length[2] = settings->unit_cells_z*settings->FCC_b;
 
-            for (i=1; i<=num_send; i++) {
-                for (a=0; a<3; a++) { /* Shift the coordinate origin */
-                  mpi_send_buffer[3*(i-1)+a] = positions[ 3*move_queue[local_node_id][i] + a]-shift_vector[local_node_id][a];
-                }
-            }
+    for(a=0;a<3;a++) {
+        system_length[a] = node_length[a]*num_processors[a];
+        origo[a] = (float)node_index[a] * node_length[a];
+        num_cells_local[a] = node_length[a]/r_cut;
+        num_cells_including_ghosts[a] = num_cells_local[a]+2;
 
-            if (my_parity[dimension] == 0) {
-                MPI_Send(mpi_send_buffer,3*num_send,MPI_DOUBLE,node_id,20,MPI_COMM_WORLD);
-                MPI_Recv(mpi_receive_buffer,3*num_receive,MPI_DOUBLE,MPI_ANY_SOURCE,20,MPI_COMM_WORLD,&status);
-            }
-            else if (my_parity[dimension] == 1) {
-                MPI_Recv(mpi_receive_buffer,3*num_receive,MPI_DOUBLE,MPI_ANY_SOURCE,20,MPI_COMM_WORLD,&status);
-                MPI_Send(mpi_send_buffer,3*num_send,MPI_DOUBLE,node_id,20,MPI_COMM_WORLD);
-            }
-            else for (i=0; i<3*num_receive; i++) mpi_receive_buffer[i] = mpi_send_buffer[i];
-
-            for (i=0; i<num_receive; i++) {
-                for (a=0; a<3; a++) positions[ 3*(num_atoms_local+new_ghost_atoms+i) + a] = mpi_receive_buffer[3*i+a];
-            }
-
-            new_ghost_atoms += num_receive;
-            MPI_Barrier(MPI_COMM_WORLD);
-        }
+        cell_length[a] = node_length[a]/num_cells_local[a];
     }
 
-    num_atoms_ghost = new_ghost_atoms;
+    num_cells_including_ghosts_yz = num_cells_including_ghosts[1]*num_cells_including_ghosts[2];
+    num_cells_including_ghosts_xyz = num_cells_including_ghosts_yz*num_cells_including_ghosts[0];
+    head = new int[num_cells_including_ghosts_xyz];
 }
 
 void System::set_topology() {
@@ -193,7 +148,7 @@ void System::set_topology() {
         /* Scalar neighbor ID, nn */
         neighbor_nodes[ku] = k1[0]*num_processors[1]*num_processors[2]+k1[1]*num_processors[2]+k1[2];
         /* Shift vector, sv */
-        for (a=0; a<3; a++) shift_vector[ku][a] = box_length[a]*iv[ku][a];
+        for (a=0; a<3; a++) shift_vector[ku][a] = node_length[a]*iv[ku][a];
     }
 
 
@@ -210,12 +165,20 @@ void System::set_topology() {
     }
 }
 
+inline void System::cell_index_from_ijk(const int &i, const int &j, const int &k, unsigned int &cell_index) {
+    cell_index = i*num_cells_including_ghosts_yz+j*num_cells_including_ghosts[2]+k;
+}
+
+inline void System::cell_index_from_vector(unsigned int *mc, unsigned int &cell_index) {
+    cell_index = mc[0]*num_cells_including_ghosts_yz+mc[1]*num_cells_including_ghosts[2]+mc[2];
+}
+
 inline bool System::atom_should_be_copied(double* ri, int ku) {
   int dimension,higher;
   dimension = ku/2; /* x(0)|y(1)|z(2) direction */
   higher = ku%2; /* Lower(0)|higher(1) direction */
   if (higher == 0) return ri[dimension] < r_cut;
-  else return ri[dimension] > box_length[dimension]-r_cut;
+  else return ri[dimension] > node_length[dimension]-r_cut;
 }
 
 
@@ -224,7 +187,7 @@ inline bool System::atom_did_change_node(double* ri, int ku) {
     dimension = ku/2;    /* x(0)|y(1)|z(2) direction */
     higher = ku%2; /* Lower(0)|higher(1) direction */
     if (higher == 0) return ri[dimension] < 0.0;
-    else return ri[dimension] > box_length[dimension];
+    else return ri[dimension] > node_length[dimension];
 }
 
 void System::mpi_move() {
@@ -338,16 +301,163 @@ void System::mpi_move() {
 
 }
 
-void System::half_kick() {
+void System::mpi_copy() {
+    MPI_Status status;
 
-}
+    int node_id, num_send, num_receive;
+    int new_ghost_atoms = 0;
+    short higher, local_node_id;
+    for(short dimension=0;dimension<3;dimension++) {
+        for (higher=0; higher<2; higher++) move_queue[2*dimension+higher][0] = 0;
+        for(i=0;i<num_atoms_local+new_ghost_atoms;i++) {
+            for(higher=0;higher<2;higher++) {
+                local_node_id = 2*dimension + higher;
+                if (atom_should_be_copied(&positions[3*i],local_node_id)) move_queue[local_node_id][++(move_queue[local_node_id][0])] = i;
+            }
+        }
 
-void System::full_kick() {
+        /* Loop through higher and lower node in this dimension */
+        for(higher=0;higher<2;higher++) {
+            local_node_id= 2*dimension+higher;
+            node_id = neighbor_nodes[local_node_id];
+            num_send = move_queue[local_node_id][0];
 
+            if (my_parity[dimension] == 0) {
+                MPI_Send(&num_send,1,MPI_INT,node_id,10,MPI_COMM_WORLD);
+                MPI_Recv(&num_receive,1,MPI_INT,MPI_ANY_SOURCE,10,MPI_COMM_WORLD,&status);
+            }
+            else if (my_parity[dimension] == 1) {
+                MPI_Recv(&num_receive,1,MPI_INT,MPI_ANY_SOURCE,10,MPI_COMM_WORLD,&status);
+                MPI_Send(&num_send,1,MPI_INT,node_id,10,MPI_COMM_WORLD);
+            }
+            else num_receive = num_send;
+
+            for (i=1; i<=num_send; i++) {
+                for (a=0; a<3; a++) { /* Shift the coordinate origin */
+                  mpi_send_buffer[3*(i-1)+a] = positions[ 3*move_queue[local_node_id][i] + a]-shift_vector[local_node_id][a];
+                }
+            }
+
+            if (my_parity[dimension] == 0) {
+                MPI_Send(mpi_send_buffer,3*num_send,MPI_DOUBLE,node_id,20,MPI_COMM_WORLD);
+                MPI_Recv(mpi_receive_buffer,3*num_receive,MPI_DOUBLE,MPI_ANY_SOURCE,20,MPI_COMM_WORLD,&status);
+            }
+            else if (my_parity[dimension] == 1) {
+                MPI_Recv(mpi_receive_buffer,3*num_receive,MPI_DOUBLE,MPI_ANY_SOURCE,20,MPI_COMM_WORLD,&status);
+                MPI_Send(mpi_send_buffer,3*num_send,MPI_DOUBLE,node_id,20,MPI_COMM_WORLD);
+            }
+            else for (i=0; i<3*num_receive; i++) mpi_receive_buffer[i] = mpi_send_buffer[i];
+
+            for (i=0; i<num_receive; i++) {
+                for (a=0; a<3; a++) positions[ 3*(num_atoms_local+new_ghost_atoms+i) + a] = mpi_receive_buffer[3*i+a];
+            }
+
+            new_ghost_atoms += num_receive;
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+    }
+
+    num_atoms_ghost = new_ghost_atoms;
 }
 
 void System::calculate_accelerations() {
+    bool is_local_atom;
+    double dr2, dr2_inverse, dr6_inverse, dr12_inverse, potential_energy_tmp, force;
+    double rr_cut = r_cut*r_cut;
 
+    /* Reset the potential & forces */
+    potential_energy = 0.0;
+    double potential_energy_local = 0;
+
+    for (i=0; i<num_atoms_local; i++) for (a=0; a<3; a++) accelerations[3*i+a] = 0.0;
+
+    for (c=0; c<num_cells_including_ghosts_xyz; c++) head[c] = EMPTY;
+
+    for (i=0; i<num_atoms_local+num_atoms_ghost; i++) {
+        for (a=0; a<3; a++) mc[a] = (positions[3*i+a]+cell_length[a])/cell_length[a];
+        cell_index_from_vector(mc,cell_index);
+
+        // Set this atom at the head of the linked list
+        linked_list[i] = head[cell_index];
+        head[cell_index] = i;
+    }
+
+    for (mc[0]=1; mc[0]<=num_cells_local[0]; mc[0]++) {
+        for (mc[1]=1; mc[1]<=num_cells_local[1]; mc[1]++) {
+            for (mc[2]=1; mc[2]<=num_cells_local[2]; mc[2]++) {
+                cell_index = mc[0]*num_cells_including_ghosts_yz+mc[1]*num_cells_including_ghosts[2]+mc[2];
+                if ( head[cell_index] == EMPTY ) continue;
+
+                // Loop through all neighbors of this cell
+                for (mc1[0]=mc[0]-1; mc1[0]<=mc[0]+1; mc1[0]++) {
+                    for (mc1[1]=mc[1]-1; mc1[1]<=mc[1]+1; mc1[1]++) {
+                        for (mc1[2]=mc[2]-1; mc1[2]<=mc[2]+1; mc1[2]++) {
+                            cell_index_from_vector(mc1,cell_index_2);
+                            if(head[cell_index_2] == EMPTY) continue;
+
+                            i = head[cell_index];
+
+                            while (i != EMPTY) {
+                                j = head[cell_index_2];
+                                while (j != EMPTY) {
+                                    if( i != j) {
+                                        is_local_atom = j < num_atoms_local;
+
+                                        /* Pair vector dr = r[i] - r[j] */
+                                        for (dr2=0.0, a=0; a<3; a++) {
+                                          dr[a] = positions[3*i+a]-positions[3*j+a];
+                                          dr2 += dr[a]*dr[a];
+                                        }
+
+                                        if (i<j && dr2<rr_cut) {
+                                            dr2_inverse = 1.0/dr2;
+                                            dr6_inverse = pow(dr2_inverse,3);
+                                            dr12_inverse = pow(dr6_inverse,2);
+
+                                            potential_energy_tmp = 2*(1.0/dr12_inverse - 1.0/dr6_inverse);
+                                            if(is_local_atom) potential_energy_local += 0.5*potential_energy_tmp;
+                                            else potential_energy_local += potential_energy_tmp;
+
+                                            for(a=0;a<3;a++) {
+                                                force = 24*(2.0*dr12_inverse-dr6_inverse)/dr2*dr[a];
+                                                accelerations[3*i+a] += force;
+                                                if(is_local_atom) accelerations[3*j+a] -= force;
+                                            }
+                                        }
+                                    } // if( i != j) {
+
+                                    j = linked_list[j];
+                                } // while (j != EMPTY) {
+                                i = linked_list[i];
+
+                            } // while (i != EMPTY) {
+
+
+                            // cout << "Selected new i: " << i << endl;
+                        } // for mc1[2]
+                    } // for mc1[1]
+                } // for mc1[0]
+            } // for mc[2]
+        } // for mc[1]
+    } // for mc[0]
+
+    MPI_Allreduce(&potential_energy_local,&potential_energy,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+}
+
+void System::half_kick() {
+    for(n=0;n<num_atoms_local;n++) {
+        for(a=0;a<3;a++) {
+            velocities[3*n+a] += accelerations[3*n+a]*dt_half;
+        }
+    }
+}
+
+void System::full_kick() {
+    for(n=0;n<num_atoms_local;n++) {
+        for(a=0;a<3;a++) {
+            velocities[3*n+a] += accelerations[3*n+a]*dt;
+        }
+    }
 }
 
 void System::move() {
@@ -365,5 +475,7 @@ void System::step() {
     move();
     mpi_move();
     mpi_copy();
+    calculate_accelerations();
+    full_kick();
     steps++;
 }

@@ -134,6 +134,8 @@ void System::init_parameters() {
         cell_length[a] = node_length[a]/num_cells_local[a];
     }
 
+    volume = system_length[0]*system_length[1]*system_length[2];
+
     num_cells_including_ghosts_yz = num_cells_including_ghosts[1]*num_cells_including_ghosts[2];
     num_cells_including_ghosts_xyz = num_cells_including_ghosts_yz*num_cells_including_ghosts[0];
     head = new int[num_cells_including_ghosts_xyz];
@@ -394,11 +396,12 @@ void System::calculate_accelerations() {
     mdtimer->start_forces();
 
     bool is_local_atom;
-    double dr2, dr2_inverse, dr6_inverse, dr12_inverse, acceleration;
+    double dr2, dr2_inverse, dr6_inverse, dr12_inverse, force;
     double rr_cut = r_cut*r_cut;
 
     /* Reset the potential & forces */
     potential_energy = 0.0;
+    pressure_forces = 0;
     double potential_energy_tmp = 0;
 
     for (i=0; i<num_atoms_local; i++) for (a=0; a<3; a++) accelerations[3*i+a] = 0.0;
@@ -420,7 +423,7 @@ void System::calculate_accelerations() {
                 cell_index = mc[0]*num_cells_including_ghosts_yz+mc[1]*num_cells_including_ghosts[2]+mc[2];
                 if ( head[cell_index] == EMPTY ) continue;
 
-                // Loop through all neighbors of this cell
+                // Loop through all neighbors of this cell. Note that i only sums over local atoms.
                 for (mc1[0]=mc[0]-1; mc1[0]<=mc[0]+1; mc1[0]++) {
                     for (mc1[1]=mc[1]-1; mc1[1]<=mc[1]+1; mc1[1]++) {
                         for (mc1[2]=mc[2]-1; mc1[2]<=mc[2]+1; mc1[2]++) {
@@ -451,9 +454,13 @@ void System::calculate_accelerations() {
                                             else potential_energy += 0.5*potential_energy_tmp;
 
                                             for(a=0;a<3;a++) {
-                                                acceleration = 24*(2.0*dr12_inverse-dr6_inverse)*dr2_inverse*dr[a]*mass_inverse;
-                                                accelerations[3*i+a] += acceleration;
-                                                if(is_local_atom) accelerations[3*j+a] -= acceleration;
+                                                force = 24*(2.0*dr12_inverse-dr6_inverse)*dr2_inverse*dr[a];
+
+                                                accelerations[3*i+a] += force*mass_inverse;
+                                                if(is_local_atom) {
+                                                    accelerations[3*j+a] -= force*mass_inverse;
+                                                    pressure_forces += force*dr[a];
+                                                } else pressure_forces += 0.5*force*dr[a];
                                             }
                                         }
                                     } // if( i != j) {

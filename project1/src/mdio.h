@@ -14,6 +14,7 @@ public:
     double *data;
     bool movie_file_open;
     FILE *energy_file;
+    FILE *pressure_file;
 
     MDIO();
     void setup(System *system_);

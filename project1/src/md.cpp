@@ -24,6 +24,8 @@ int main(int args, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
+    double t_start = MPI_Wtime();
+
     Settings *settings = new Settings("../md.ini");
     System *system = new System();
     system->setup(myid, settings);
@@ -43,14 +45,19 @@ int main(int args, char *argv[]) {
     system->mdio->save_state_to_file_binary();
 
     if(myid==0) {
+        double total_time = MPI_Wtime() - t_start;
         cout.precision(2);
-
-        cout << fixed << "System initialize : " << system->mdtimer->system_initialize << " s ( " << 100*system->mdtimer->fraction_system_initialize() << "%)" <<  endl
-         << "Force calculation : " << system->mdtimer->forces << " s ( " << 100*system->mdtimer->fraction_forces() << "%)" <<  endl
-         << "Moving            : " << system->mdtimer->moving << " s ( " << 100*system->mdtimer->fraction_moving() << "%)" <<  endl
-         << "Sampling          : " << system->mdtimer->sampling << " s ( " << 100*system->mdtimer->fraction_sampling() << "%)" <<  endl
-         << "Disk IO           : " << system->mdtimer->io << " s ( " << 100*system->mdtimer->fraction_io() << "%)" <<  endl
-         << "MPI communication : " << system->mdtimer->mpi << " s ( " << 100*system->mdtimer->fraction_mpi() << "%)" <<  endl;
+        cout << endl << "Program finished after " << total_time << " seconds. Time analysis:" << endl;
+        cout << fixed
+             << "      System initialize : " << system->mdtimer->system_initialize << " s ( " << 100*system->mdtimer->fraction_system_initialize() << "%)" <<  endl
+             << "      Force calculation : " << system->mdtimer->forces << " s ( " << 100*system->mdtimer->fraction_forces() << "%)" <<  endl
+             << "      Moving            : " << system->mdtimer->moving << " s ( " << 100*system->mdtimer->fraction_moving() << "%)" <<  endl
+             << "      Thermostat        : " << system->mdtimer->thermostat << " s ( " << 100*system->mdtimer->fraction_thermostat() << "%)" <<  endl
+             << "      Sampling          : " << system->mdtimer->sampling << " s ( " << 100*system->mdtimer->fraction_sampling() << "%)" <<  endl
+             << "      Disk IO           : " << system->mdtimer->io << " s ( " << 100*system->mdtimer->fraction_io() << "%)" <<  endl
+             << "      MPI communication : " << system->mdtimer->mpi << " s ( " << 100*system->mdtimer->fraction_mpi() << "%)" <<  endl;
+        cout << endl << settings->timesteps / total_time << " timesteps / second. " << endl;
+        cout << endl << system->num_atoms_global*settings->timesteps / (1000*total_time) << "k atom timesteps / second. " << endl;
     }
 
     MPI_Finalize();

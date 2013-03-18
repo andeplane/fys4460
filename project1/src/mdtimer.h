@@ -15,6 +15,13 @@ public:
     void end_moving();
     double fraction_moving();
 
+    double thermostat_t0;
+    double thermostat;
+    double thermostat_global;
+    void start_thermostat();
+    void end_thermostat();
+    double fraction_thermostat();
+
     double sampling_t0;
     double sampling;
     double sampling_global;

@@ -64,14 +64,14 @@ public:
     int *linked_list;
 
     int num_nodes;
-    double mass_inverse;
+    double mass_inverse, pressure_forces;
     unsigned long num_atoms_local;
     unsigned long num_atoms_global;
     unsigned long num_atoms_ghost;
     long i,j,k,n,m,a,b,c, nx, ny, nz;
     unsigned int cell_index, cell_index_2;
 
-    double r_cut, dt, dt_half, potential_energy, t;
+    double r_cut, dt, dt_half, potential_energy, t, volume;
 
     double *positions;
     double *initial_positions;

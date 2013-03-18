@@ -9,6 +9,7 @@ MDTimer::MDTimer() {
     forces = 0;
     mpi = 0;
     system_initialize = 0;
+    sampling = 0;
     io = 0;
 }
 
@@ -23,6 +24,19 @@ void MDTimer::end_moving() {
 double MDTimer::fraction_moving() {
     double t1 = MPI_Wtime();
     return moving/(t1-t0);
+}
+
+void MDTimer::start_sampling() {
+    sampling_t0 = MPI_Wtime();
+}
+
+void MDTimer::end_sampling() {
+    sampling += MPI_Wtime() - sampling_t0;
+}
+
+double MDTimer::fraction_sampling() {
+    double t1 = MPI_Wtime();
+    return sampling/(t1-t0);
 }
 
 void MDTimer::start_io() {

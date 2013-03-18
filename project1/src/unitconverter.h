@@ -7,6 +7,7 @@ public:
     double m0;
     double L0;
     double E0;
+    double E0ev;
     double kb;
     double t0;
     double F0;
@@ -35,6 +36,9 @@ public:
 
     double energy_to_SI(double E);
     double energy_from_SI(double E);
+
+    double energy_to_ev(double E);
+    double energy_from_ev(double E);
 
     double time_to_SI(double t);
     double time_from_SI(double t);

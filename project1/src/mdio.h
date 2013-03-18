@@ -13,6 +13,7 @@ public:
     ofstream *movie_file;
     double *data;
     bool movie_file_open;
+    FILE *energy_file;
 
     MDIO();
     void setup(System *system_);

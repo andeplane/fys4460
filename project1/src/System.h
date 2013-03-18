@@ -6,6 +6,7 @@ class Settings;
 class MDIO;
 class MDTimer;
 class Random;
+class UnitConverter;
 
 #include <fstream>
 #include <vector>
@@ -35,6 +36,7 @@ public:
     MDIO *mdio;
     Random *rnd;
     MDTimer *mdtimer;
+    UnitConverter *unit_converter;
 
     unsigned int num_cells_including_ghosts_yz;
     unsigned int num_cells_including_ghosts_xyz;
@@ -68,7 +70,7 @@ public:
     long i,j,k,n,m,a,b,c, nx, ny, nz;
     unsigned int cell_index, cell_index_2;
 
-    double r_cut, dt, dt_half, potential_energy;
+    double r_cut, dt, dt_half, potential_energy, t;
 
     double *positions;
     double *initial_positions;

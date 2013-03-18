@@ -20,6 +20,7 @@ public:
     int timesteps;
     int num_atoms_max;
     int movie_every_n_frame;
+    int statistics_interval;
     bool create_movie;
     bool load_state;
 

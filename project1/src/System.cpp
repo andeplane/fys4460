@@ -20,6 +20,7 @@ System::System() {
 void System::setup(int myid_, Settings *settings_) {
     mdtimer = new MDTimer();
     mdtimer->start_system_initialize();
+    unit_converter = new UnitConverter();
 
     myid = myid_;
     settings = settings_;
@@ -62,7 +63,6 @@ void System::setup(int myid_, Settings *settings_) {
 }
 
 void System::create_FCC() {
-    UnitConverter *unit_converter = new UnitConverter();
     double xCell[4] = {0, 0.5, 0.5, 0};
     double yCell[4] = {0, 0.5, 0, 0.5};
     double zCell[4] = {0, 0, 0.5, 0.5};
@@ -106,6 +106,7 @@ void System::init_parameters() {
     r_cut = settings->r_cut;
     dt = settings->dt;
     dt_half = dt/2;
+    t = 0;
 
     num_processors[0] = settings->nodes_x;
     num_processors[1] = settings->nodes_y;
@@ -470,8 +471,6 @@ void System::calculate_accelerations() {
         } // for mc[1]
     } // for mc[0]
     mdtimer->end_forces();
-
-    MPI_Allreduce(&potential_energy_local,&potential_energy,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 }
 
 void System::half_kick() {
@@ -503,12 +502,11 @@ void System::move() {
 }
 
 void System::step() {
-    if(myid==0 && !(steps % 100) ) cout << steps << endl;
-    // if(myid==0) cout << steps << endl;
     move();
     mpi_move();
     mpi_copy();
     calculate_accelerations();
     full_kick();
     steps++;
+    t += dt;
 }

@@ -1,37 +1,18 @@
-/*
 #pragma once
 
-#include "Atom.h"
 #include <stdio.h>
-#include "System.h"
+#include <system.h>
 #include <fstream>
-#include <unitconverter.h>
+
+class System;
+class Settings;
 
 class StatisticsSampler {
 private:
-	System *system;
+    System *system;
+    Settings *settings;
 public:
-	bool temperature;
-	bool pressure;
-	bool energy;
-	bool printVelocities;
-	bool diffusionConstant;
-    UnitConverter unit_converter;
-
-	FILE *velocityFile;
-	FILE *temperatureFile;
-	FILE *pressureFile;
-	FILE *energyFile;
-	FILE *diffusionFile;
-
-	StatisticsSampler(System *system);
-	void sample(double t);
-	void calculateTemperature(double t);
-	void calculatePressure(double t);
-	void calculateEnergy(double t);
-	void calculateVelocities(double t);
-	void calculateDiffusionConstant(double t);
+    StatisticsSampler(System *system);
+    void sample();
+    double kinetic_energy, potential_energy, temperature, mean_r_squared;
 };
-
-
-*/

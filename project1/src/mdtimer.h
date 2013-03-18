@@ -15,6 +15,13 @@ public:
     void end_moving();
     double fraction_moving();
 
+    double sampling_t0;
+    double sampling;
+    double sampling_global;
+    void start_sampling();
+    void end_sampling();
+    double fraction_sampling();
+
     double io_t0;
     double io;
     double io_global;

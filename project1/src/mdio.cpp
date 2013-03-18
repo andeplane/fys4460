@@ -12,6 +12,7 @@ void MDIO::setup(System *system_) {
     system = system_;
     settings = system->settings;
     movie_file_open = false;
+    if(system->myid==0) energy_file = fopen("energy.txt","w");
 }
 
 void MDIO::save_state_to_movie_file() {
@@ -108,4 +109,5 @@ void MDIO::finalize() {
     }
 
     if(system->myid != 0) return;
+    fclose(energy_file);
 }

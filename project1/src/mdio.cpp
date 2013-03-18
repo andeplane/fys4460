@@ -54,9 +54,9 @@ void MDIO::save_state_to_file_binary() {
     double *tmp_data = new double[6*system->num_atoms_local];
 
     for(unsigned int i=0;i<system->num_atoms_local;i++) {
-        tmp_data[6*i + 0] = system->positions[3*i+0];
-        tmp_data[6*i + 1] = system->positions[3*i+1];
-        tmp_data[6*i + 2] = system->positions[3*i+2];
+        tmp_data[6*i + 0] = system->positions[3*i+0] + system->origo[0];
+        tmp_data[6*i + 1] = system->positions[3*i+1] + system->origo[1];
+        tmp_data[6*i + 2] = system->positions[3*i+2] + system->origo[2];
 
         tmp_data[6*i + 3] = system->velocities[3*i+0];
         tmp_data[6*i + 4] = system->velocities[3*i+1];
@@ -74,7 +74,6 @@ void MDIO::save_state_to_file_binary() {
 
 void MDIO::load_state_from_file_binary() {
     system->mdtimer->start_io();
-    if(system->myid==0) cout << "Loading state from file..." << endl;
 
     char *filename = new char[100];
     sprintf(filename,"state_files/state%04d.bin",system->myid);
@@ -88,18 +87,13 @@ void MDIO::load_state_from_file_binary() {
 
     for(unsigned int i=0;i<system->num_atoms_local;i++) {
         system->positions[3*i+0] = tmp_data[6*i+0] - system->origo[0];
-        system->positions[3*i+1] = tmp_data[6*i+1] - system->origo[0];
-        system->positions[3*i+2] = tmp_data[6*i+2] - system->origo[0];
-
-        system->initial_positions[3*i+0] = system->positions[3*i+0];
-        system->initial_positions[3*i+1] = system->positions[3*i+1];
-        system->initial_positions[3*i+2] = system->positions[3*i+2];
+        system->positions[3*i+1] = tmp_data[6*i+1] - system->origo[1];
+        system->positions[3*i+2] = tmp_data[6*i+2] - system->origo[2];
 
         system->velocities[3*i+0] = tmp_data[6*i+3];
-        system->velocities[3*i+0] = tmp_data[6*i+4];
-        system->velocities[3*i+0] = tmp_data[6*i+5];
+        system->velocities[3*i+1] = tmp_data[6*i+4];
+        system->velocities[3*i+2] = tmp_data[6*i+5];
     }
-
     delete tmp_data;
     delete filename;
     system->mdtimer->end_io();

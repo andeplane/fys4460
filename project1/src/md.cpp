@@ -1,12 +1,12 @@
 #include <iostream>
-#include "math.h"
-#include "time.h"
+#include <math.h>
+#include <time.h>
 #include <armadillo>
 #include <fstream>
-#include "System.h"
-#include "StatisticsSampler.h"
+#include <system.h>
+#include <statisticssampler.h>
 #include <thermostat.h>
-#include <CIniFile.h>
+#include <cinifile.h>
 #include <unitconverter.h>
 #include <settings.h>
 #include <mpi.h>
@@ -29,6 +29,8 @@ int main(int args, char *argv[]) {
         system->step();
         system->mdio->save_state_to_movie_file();
 	}
+
+
 
     MPI_Finalize();
 

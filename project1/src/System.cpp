@@ -1,13 +1,14 @@
 #include <iostream>
-#include "math.h"
-#include "time.h"
+#include <math.h>
+#include <time.h>
 #include <fstream>
-#include "System.h"
-#include <inlines.h>
+#include <system.h>
 #include <settings.h>
 #include <mpi.h>
 #include <mdio.h>
 #include <unitconverter.h>
+#include <mdtimer.h>
+#include <random.h>
 
 using namespace std;
 #define MOVED_OUT -1.0e10
@@ -17,6 +18,9 @@ System::System() {
 }
 
 void System::setup(int myid_, Settings *settings_) {
+    mdtimer = new MDTimer();
+    mdtimer->start_system_initialize();
+
     myid = myid_;
     settings = settings_;
     num_atoms_local = 0;
@@ -43,12 +47,14 @@ void System::setup(int myid_, Settings *settings_) {
     mdio->setup(this);
     set_topology();
     create_FCC();
+
     mpi_copy();
     calculate_accelerations();
     half_kick();
 
     if(myid==0) cout << "System size: " << system_length[0] << " " << system_length[1] << " " << system_length[2] << endl;
     if(myid==0) cout << "Atoms: " << num_atoms_global << endl;
+    mdtimer->end_system_initialize();
 }
 
 void System::create_FCC() {
@@ -197,8 +203,6 @@ void System::mpi_move() {
     int node_id,num_send,num_receive;
     short node_higher, node_lower, local_node_id;
 
-    double com1;
-
     /* Reset the # of to-be-moved atoms, move_queue[][0] */
     for (short ku=0; ku<6; ku++) move_queue[ku][0] = 0;
 
@@ -219,7 +223,8 @@ void System::mpi_move() {
         }
 
         /* Message passing with neighbor nodes----------------------------*/
-        com1 = MPI_Wtime();
+
+        mdtimer->start_mpi();
 
         /* Loop over the lower & higher directions------------------------*/
         for (j=0; j<2; j++) {
@@ -282,8 +287,9 @@ void System::mpi_move() {
             MPI_Barrier(MPI_COMM_WORLD);
         } /* Endfor lower & higher directions, j */
 
-        // comt+=MPI_Wtime()-com1;
+        mdtimer->end_mpi();
     }
+
     int ipt = 0;
     for (i=0; i<num_atoms_local+new_atoms; i++) {
         if (!atom_moved[i]) {
@@ -315,6 +321,8 @@ void System::mpi_copy() {
                 if (atom_should_be_copied(&positions[3*i],local_node_id)) move_queue[local_node_id][++(move_queue[local_node_id][0])] = i;
             }
         }
+
+        mdtimer->start_mpi();
 
         /* Loop through higher and lower node in this dimension */
         for(higher=0;higher<2;higher++) {
@@ -355,12 +363,16 @@ void System::mpi_copy() {
             new_ghost_atoms += num_receive;
             MPI_Barrier(MPI_COMM_WORLD);
         }
+
+        mdtimer->end_mpi();
     }
 
     num_atoms_ghost = new_ghost_atoms;
 }
 
 void System::calculate_accelerations() {
+    mdtimer->start_forces();
+
     bool is_local_atom;
     double dr2, dr2_inverse, dr6_inverse, dr12_inverse, potential_energy_tmp, force;
     double rr_cut = r_cut*r_cut;
@@ -440,6 +452,7 @@ void System::calculate_accelerations() {
             } // for mc[2]
         } // for mc[1]
     } // for mc[0]
+    mdtimer->end_forces();
 
     MPI_Allreduce(&potential_energy_local,&potential_energy,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 }
@@ -471,8 +484,8 @@ void System::move() {
 }
 
 void System::step() {
-    // if(myid==0 && !(steps % 100) ) cout << steps << endl;
-    if(myid==0) cout << steps << endl;
+    if(myid==0 && !(steps % 100) ) cout << steps << endl;
+    // if(myid==0) cout << steps << endl;
     move();
     mpi_move();
     mpi_copy();

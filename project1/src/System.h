@@ -4,9 +4,10 @@ class Atom;
 class ThreadControl;
 class Settings;
 class MDIO;
+class MDTimer;
+class Random;
 
 #include <fstream>
-#include <random.h>
 #include <vector>
 
 #define EMPTY -1
@@ -33,6 +34,7 @@ public:
     Settings *settings;
     MDIO *mdio;
     Random *rnd;
+    MDTimer *mdtimer;
 
     unsigned int num_cells_including_ghosts_yz;
     unsigned int num_cells_including_ghosts_xyz;

@@ -9,36 +9,33 @@ release {
 DEFINES += MPI_ENABLED
 
 SOURCES += \
-    System.cpp \
-    StatisticsSampler.cpp \
+    system.cpp \
+    statisticssampler.cpp \
     md.cpp \
     random.cpp \
     thermostat.cpp \
-    CVector.cpp \
-    CUtil.cpp \
-    CMath.cpp \
+    cutil.cpp \
     unitconverter.cpp \
     settings.cpp \
-    mdio.cpp
+    mdio.cpp \
+    atom.cpp \
+    mdtimer.cpp
 
 HEADERS += \
-    System.h \
-    StatisticsSampler.h \
-    inlines.h \
+    system.h \
+    statisticssampler.h \
     random.h \
     thermostat.h \
-    CVector.h \
-    CUtil.h \
-    CIniFile.h \
-    CMatrix.h \
-    CMath.h \
-    Stdafx.h \
+    cutil.h \
+    cinifile.h \
     unitconverter.h \
     settings.h \
-    mdio.h
+    mdio.h \
+    atom.h \
+    mdtimer.h
 
 mac {
-    QMAKE_CXX = mpic++
+    QMAKE_CXX = icc
     CONFIG -= app_bundle
     LIBS   += -larmadillo -llapack -lblas
     INCLUDEPATH += /usr/local/Cellar/boost/1.49.0/include/boost

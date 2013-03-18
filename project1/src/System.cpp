@@ -414,8 +414,6 @@ void System::calculate_accelerations() {
         head[cell_index] = i;
     }
 
-    long force_count = 0;
-
     for (mc[0]=1; mc[0]<=num_cells_local[0]; mc[0]++) {
         for (mc[1]=1; mc[1]<=num_cells_local[1]; mc[1]++) {
             for (mc[2]=1; mc[2]<=num_cells_local[2]; mc[2]++) {
@@ -435,7 +433,6 @@ void System::calculate_accelerations() {
                                 j = head[cell_index_2];
                                 while (j != EMPTY) {
                                     if(i < j) {
-                                        force_count++;
                                         is_local_atom = j < num_atoms_local;
 
                                         /* Pair vector dr = r[i] - r[j] */

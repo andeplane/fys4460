@@ -1,16 +1,12 @@
-/*
 #pragma once
-#include <Atom.h>
+class System;
+class StatisticsSampler;
 
 class Thermostat
 {
 public:
-    double T;
     double relaxation_time;
-    double dt;
 
-    Thermostat(double T_, double relaxation_time_, double dt_);
-    void apply(const vector<Atom*>& atoms);
-
+    Thermostat(double relaxation_time_);
+    void apply(StatisticsSampler *sampler, System *system, const double &temperature);
 };
-*/

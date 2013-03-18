@@ -1,26 +1,24 @@
-/*
-#include "thermostat.h"
-#include <vector>
+#include <thermostat.h>
+#include <system.h>
+#include <statisticssampler.h>
+#include <system.h>
+#include <math.h>
+#include <iostream>
+#include <unitconverter.h>
+
 using namespace std;
 
-Thermostat::Thermostat(double T_, double relaxation_time_, double dt_)
+Thermostat::Thermostat(double relaxation_time_)
 {
-    T = T_;
     relaxation_time = relaxation_time_;
-    dt = dt_;
 }
 
-void Thermostat::apply(const vector<Atom*>& atoms) {
-    double system_temperature = 0;
-    for(int n=0;n<atoms.size();n++) {
-        system_temperature += dot(atoms[n]->v,atoms[n]->v);
-    }
-    system_temperature /= 3*atoms.size();
+void Thermostat::apply(StatisticsSampler *sampler, System *system, const double &temperature) {
+    sampler->sample_temperature();
 
-    double berendsen_factor = sqrt(1 + dt/relaxation_time*(T/system_temperature - 1));
+    double berendsen_factor = sqrt(1 + system->dt/relaxation_time*(system->unit_converter->temperature_from_SI(temperature)/sampler->temperature - 1));
 
-    for(int n=0;n<atoms.size();n++) {
-        atoms[n]->v *= berendsen_factor;
+    for(unsigned long i=0;i<system->num_atoms_local;i++) {
+        for(short a=0;a<3;a++) system->velocities[3*i+a] *= berendsen_factor;
     }
 }
-*/

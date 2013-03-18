@@ -20,19 +20,19 @@ void MDIO::save_state_to_movie_file() {
             sprintf(filename,"state_files/movie%04d.bin",system->myid);
             movie_file = new ofstream(filename,ios::out | ios::binary);
             movie_file_open = true;
-            data = new double[3*settings->num_particles_max];
+            data = new double[3*settings->num_atoms_max];
 
             delete filename;
         }
 
-        for(unsigned long n=0;n<system->num_particles_local;n++) {
+        for(unsigned long n=0;n<system->num_atoms_local;n++) {
             data[3*n+0] = system->positions[3*n+0] + system->origo[0];
             data[3*n+1] = system->positions[3*n+1] + system->origo[1];
             data[3*n+2] = system->positions[3*n+2] + system->origo[2];
         }
 
-        movie_file->write (reinterpret_cast<char*>(&system->num_particles_local), sizeof(unsigned long));
-        movie_file->write (reinterpret_cast<char*>(data), 3*system->num_particles_local*sizeof(double));
+        movie_file->write (reinterpret_cast<char*>(&system->num_atoms_local), sizeof(unsigned long));
+        movie_file->write (reinterpret_cast<char*>(data), 3*system->num_atoms_local*sizeof(double));
         movie_file->flush();
     }
 }

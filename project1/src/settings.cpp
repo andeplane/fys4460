@@ -15,7 +15,7 @@ Settings::Settings(string filename) {
         nodes_y = ini_file.getint("nodes_y");
         nodes_z = ini_file.getint("nodes_z");
         timesteps = ini_file.getint("timesteps");
-        num_particles_max = ini_file.getint("num_particles_max");
+        num_atoms_max = ini_file.getint("num_atoms_max");
         movie_every_n_frame = ini_file.getint("movie_every_n_frame");
         create_movie = ini_file.getbool("create_movie");
     }

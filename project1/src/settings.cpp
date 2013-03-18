@@ -18,6 +18,7 @@ Settings::Settings(string filename) {
         num_atoms_max = ini_file.getint("num_atoms_max");
         movie_every_n_frame = ini_file.getint("movie_every_n_frame");
         create_movie = ini_file.getbool("create_movie");
+        load_state = ini_file.getbool("load_state");
     }
     catch (int e) {
         cout << "Could not load settings file." << endl;

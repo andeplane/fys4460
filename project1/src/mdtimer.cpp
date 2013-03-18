@@ -8,6 +8,7 @@ MDTimer::MDTimer() {
     moving = 0;
     forces = 0;
     mpi = 0;
+    system_initialize = 0;
     io = 0;
 }
 

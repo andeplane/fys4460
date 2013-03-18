@@ -21,5 +21,6 @@ public:
     int num_atoms_max;
     int movie_every_n_frame;
     bool create_movie;
+    bool load_state;
 
 };

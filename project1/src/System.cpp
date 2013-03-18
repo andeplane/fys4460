@@ -32,6 +32,7 @@ void System::setup(int myid_, Settings *settings_) {
     mpi_receive_buffer = new double[settings->num_atoms_max];
 
     positions = new double[3*settings->num_atoms_max];
+    initial_positions = new double[3*settings->num_atoms_max];
     accelerations = new double[3*settings->num_atoms_max];
     velocities = new double[3*settings->num_atoms_max];
     atom_moved = new bool[settings->num_atoms_max];
@@ -46,7 +47,10 @@ void System::setup(int myid_, Settings *settings_) {
     mdio = new MDIO();
     mdio->setup(this);
     set_topology();
-    create_FCC();
+    if(settings->load_state) mdio->load_state_from_file_binary();
+    else create_FCC();
+
+    MPI_Allreduce(&num_atoms_local,&num_atoms_global,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD);
 
     mpi_copy();
     calculate_accelerations();
@@ -66,7 +70,6 @@ void System::create_FCC() {
     double r[3];
     double T = unit_converter->temperature_from_SI(settings->temperature);
 
-    int n = 0;
     for(int x = 0; x < settings->nodes_x*settings->unit_cells_x; x++) {
         for(int y = 0; y < settings->nodes_y*settings->unit_cells_y; y++) {
             for(int z = 0; z < settings->nodes_z*settings->unit_cells_z; z++) {
@@ -82,7 +85,10 @@ void System::create_FCC() {
                     }
 
                     if(is_mine) {
-                        for(i=0;i<3;i++) positions[3*num_atoms_local+i] = r[i];
+                        for(i=0;i<3;i++) {
+                            positions[3*num_atoms_local+i] = r[i];
+                            initial_positions[3*num_atoms_local+i] = r[i];
+                        }
 
                         velocities[3*num_atoms_local+0] = rnd->nextGauss()*sqrt(T);
                         velocities[3*num_atoms_local+1] = rnd->nextGauss()*sqrt(T);
@@ -94,8 +100,6 @@ void System::create_FCC() {
             }
         }
     }
-
-    MPI_Allreduce(&num_atoms_local,&num_atoms_global,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD);
 }
 
 void System::init_parameters() {
@@ -128,6 +132,17 @@ void System::init_parameters() {
     num_cells_including_ghosts_yz = num_cells_including_ghosts[1]*num_cells_including_ghosts[2];
     num_cells_including_ghosts_xyz = num_cells_including_ghosts_yz*num_cells_including_ghosts[0];
     head = new int[num_cells_including_ghosts_xyz];
+    is_ghost_cell = new bool[num_cells_including_ghosts_xyz];
+    for(int cx=0;cx<num_cells_local[0]+2;cx++) {
+        for(int cy=0;cy<num_cells_local[1]+2;cy++) {
+            for(int cz=0;cz<num_cells_local[2]+2;cz++) {
+                cell_index_from_ijk(cx,cy,cz,cell_index);
+                if(cx == 0 || cx == num_cells_local[0]+1 || cy == 0 || cy == num_cells_local[1]+1 || cz == 0 || cz == num_cells_local[2]+1) {
+                    is_ghost_cell[cell_index] = true;
+                } else is_ghost_cell[cell_index] = false;
+            }
+        }
+    }
 }
 
 void System::set_topology() {
@@ -407,21 +422,23 @@ void System::calculate_accelerations() {
                             cell_index_from_vector(mc1,cell_index_2);
                             if(head[cell_index_2] == EMPTY) continue;
 
+                            // if(cell_index < cell_index_2) continue;
+
                             i = head[cell_index];
 
                             while (i != EMPTY) {
                                 j = head[cell_index_2];
                                 while (j != EMPTY) {
-                                    if( i != j) {
+                                    if(i < j) {
                                         is_local_atom = j < num_atoms_local;
 
                                         /* Pair vector dr = r[i] - r[j] */
                                         for (dr2=0.0, a=0; a<3; a++) {
-                                          dr[a] = positions[3*i+a]-positions[3*j+a];
-                                          dr2 += dr[a]*dr[a];
+                                            dr[a] = positions[3*i+a]-positions[3*j+a];
+                                            dr2 += dr[a]*dr[a];
                                         }
 
-                                        if (i<j && dr2<rr_cut) {
+                                        if (dr2<rr_cut) {
                                             dr2_inverse = 1.0/dr2;
                                             dr6_inverse = pow(dr2_inverse,3);
                                             dr12_inverse = pow(dr6_inverse,2);
@@ -431,7 +448,7 @@ void System::calculate_accelerations() {
                                             else potential_energy_local += potential_energy_tmp;
 
                                             for(a=0;a<3;a++) {
-                                                force = 24*(2.0*dr12_inverse-dr6_inverse)/dr2*dr[a];
+                                                force = 24*(2.0*dr12_inverse-dr6_inverse)*dr2_inverse*dr[a];
                                                 accelerations[3*i+a] += force;
                                                 if(is_local_atom) accelerations[3*j+a] -= force;
                                             }
@@ -474,6 +491,7 @@ void System::full_kick() {
 }
 
 void System::move() {
+    mdtimer->start_moving();
     for(n=0;n<num_atoms_local;n++) {
         for(a=0;a<3;a++) {
             positions[3*n+a] += velocities[3*n+a]*dt;
@@ -481,6 +499,7 @@ void System::move() {
 
         atom_moved[n] = false;
     }
+    mdtimer->end_moving();
 }
 
 void System::step() {

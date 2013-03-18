@@ -18,5 +18,6 @@ public:
     void setup(System *system_);
     void save_state_to_file_binary();
     void save_state_to_movie_file();
+    void load_state_from_file_binary();
     void finalize();
 };

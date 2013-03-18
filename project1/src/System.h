@@ -57,7 +57,8 @@ public:
     double *mpi_receive_buffer;
     bool *atom_moved;
     unsigned int *move_queue[6];
-    int *head;
+    int  *head;
+    bool *is_ghost_cell;
     int *linked_list;
 
     int num_nodes;
@@ -70,6 +71,7 @@ public:
     double r_cut, dt, dt_half, potential_energy;
 
     double *positions;
+    double *initial_positions;
     double *accelerations;
     double *velocities;
     double origo[3];

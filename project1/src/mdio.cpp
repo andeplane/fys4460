@@ -1,6 +1,7 @@
 #include <mdio.h>
 #include <system.h>
 #include <settings.h>
+#include <mdtimer.h>
 
 MDIO::MDIO()
 {
@@ -14,6 +15,7 @@ void MDIO::setup(System *system_) {
 }
 
 void MDIO::save_state_to_movie_file() {
+    system->mdtimer->start_io();
     if(settings->create_movie && !(system->steps % settings->movie_every_n_frame)) {
         if(!movie_file_open) {
             char *filename = new char[100];
@@ -35,48 +37,69 @@ void MDIO::save_state_to_movie_file() {
         movie_file->write (reinterpret_cast<char*>(data), 3*system->num_atoms_local*sizeof(double));
         movie_file->flush();
     }
+    system->mdtimer->end_io();
 }
 
 void MDIO::save_state_to_file_binary() {
-//    if(system->myid==0) cout << "Saving state to file..." << endl;
-//    ThreadControl *thread_control = system->thread_control;
+    system->mdtimer->start_io();
+    if(system->myid==0) cout << "Saving state to file..." << endl;
 
-//    char *filename = new char[100];
-//    sprintf(filename,"state_files/state%04d.bin",system->myid);
+    char *filename = new char[100];
+    sprintf(filename,"state_files/state%04d.bin",system->myid);
 
-//    ofstream file (filename, ios::out | ios::binary);
-//    double *tmp_data = new double[9*thread_control->num_atoms];
+    ofstream file (filename, ios::out | ios::binary);
+    double *tmp_data = new double[6*system->num_atoms_local];
 
-//    int count = 0;
-//    int atoms = 0;
+    for(unsigned int i=0;i<system->num_atoms_local;i++) {
+        tmp_data[6*i + 0] = system->positions[3*i+0];
+        tmp_data[6*i + 1] = system->positions[3*i+1];
+        tmp_data[6*i + 2] = system->positions[3*i+2];
 
-//    for(unsigned int i=0;i<thread_control->my_cells.size();i++) {
-//        Cell *cell = thread_control->my_cells[i];
-//        Atom *atom = cell->first_atom;
+        tmp_data[6*i + 3] = system->velocities[3*i+0];
+        tmp_data[6*i + 4] = system->velocities[3*i+1];
+        tmp_data[6*i + 5] = system->velocities[3*i+2];
+    }
 
-//        while(atom != NULL) {
-//            tmp_data[count++] = atom->r[0];
-//            tmp_data[count++] = atom->r[1];
-//            tmp_data[count++] = atom->r[2];
+    file.write (reinterpret_cast<char*>(&system->num_atoms_local), sizeof(int));
+    file.write (reinterpret_cast<char*>(tmp_data), 6*system->num_atoms_local*sizeof(double));
 
-//            tmp_data[count++] = atom->r_initial[0];
-//            tmp_data[count++] = atom->r_initial[1];
-//            tmp_data[count++] = atom->r_initial[2];
+    file.close();
+    delete tmp_data;
+    delete filename;
+    system->mdtimer->end_io();
+}
 
-//            tmp_data[count++] = atom->v[0];
-//            tmp_data[count++] = atom->v[1];
-//            tmp_data[count++] = atom->v[2];
-//            atom = atom->next;
-//            atoms++;
-//        }
-//    }
+void MDIO::load_state_from_file_binary() {
+    system->mdtimer->start_io();
+    if(system->myid==0) cout << "Loading state from file..." << endl;
 
-//    file.write (reinterpret_cast<char*>(&atoms), sizeof(int));
-//    file.write (reinterpret_cast<char*>(tmp_data), 9*atoms*sizeof(double));
+    char *filename = new char[100];
+    sprintf(filename,"state_files/state%04d.bin",system->myid);
 
-//    file.close();
-//    delete tmp_data;
-//    delete filename;
+    ifstream file (filename, ios::in | ios::binary);
+
+    file.read(reinterpret_cast<char*>(&system->num_atoms_local),sizeof(int));
+    double *tmp_data = new double[6*system->num_atoms_local];
+    file.read(reinterpret_cast<char*>(tmp_data),6*system->num_atoms_local*sizeof(double));
+    file.close();
+
+    for(unsigned int i=0;i<system->num_atoms_local;i++) {
+        system->positions[3*i+0] = tmp_data[6*i+0] - system->origo[0];
+        system->positions[3*i+1] = tmp_data[6*i+1] - system->origo[0];
+        system->positions[3*i+2] = tmp_data[6*i+2] - system->origo[0];
+
+        system->initial_positions[3*i+0] = system->positions[3*i+0];
+        system->initial_positions[3*i+1] = system->positions[3*i+1];
+        system->initial_positions[3*i+2] = system->positions[3*i+2];
+
+        system->velocities[3*i+0] = tmp_data[6*i+3];
+        system->velocities[3*i+0] = tmp_data[6*i+4];
+        system->velocities[3*i+0] = tmp_data[6*i+5];
+    }
+
+    delete tmp_data;
+    delete filename;
+    system->mdtimer->end_io();
 }
 
 void MDIO::finalize() {

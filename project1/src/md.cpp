@@ -11,6 +11,7 @@
 #include <settings.h>
 #include <mpi.h>
 #include <mdio.h>
+#include <mdtimer.h>
 
 using namespace arma;
 using namespace std;
@@ -30,7 +31,15 @@ int main(int args, char *argv[]) {
         system->mdio->save_state_to_movie_file();
 	}
 
+    system->mdio->save_state_to_file_binary();
 
+    if(myid==0) {
+        cout << "System initialize : " << system->mdtimer->system_initialize << " s ( " << 100*system->mdtimer->fraction_system_initialize() << "%)" <<  endl;
+        cout << "Disk IO           : " << system->mdtimer->io << " s ( " << 100*system->mdtimer->fraction_io() << "%)" <<  endl;
+        cout << "Force calculation : " << system->mdtimer->forces << " s ( " << 100*system->mdtimer->fraction_forces() << "%)" <<  endl;
+        cout << "Moving            : " << system->mdtimer->moving << " s ( " << 100*system->mdtimer->fraction_moving() << "%)" <<  endl;
+        cout << "MPI communication : " << system->mdtimer->mpi << " s ( " << 100*system->mdtimer->fraction_mpi() << "%)" <<  endl;
+    }
 
     MPI_Finalize();
 

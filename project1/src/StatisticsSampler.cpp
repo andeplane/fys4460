@@ -91,7 +91,7 @@ void StatisticsSampler::sample() {
                 );
         cout.setf(ios::fixed);
         cout.precision(5);
-        cout << "Timestep " << setw(6) << system->steps << "   t=" << t_in_pico_seconds << "ps   T=" << system->unit_converter->temperature_to_SI(temperature) << " K" << endl;
+        cout << "Timestep " << setw(6) << system->steps << "   t=" << t_in_pico_seconds << " ps   T=" << system->unit_converter->temperature_to_SI(temperature) << " K" << endl;
     }
 
     system->mdtimer->end_sampling();

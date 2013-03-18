@@ -27,6 +27,13 @@ int main(int args, char *argv[]) {
     double t_start = MPI_Wtime();
 
     Settings *settings = new Settings("../md.ini");
+    int num_nodes = settings->nodes_x*settings->nodes_y*settings->nodes_z;
+    if(numprocs != num_nodes) {
+        if(myid==0) cout << "Wrong number of processors. " << endl << "Config files says " << num_nodes << ". MPI started with " << numprocs << "." << endl;
+        MPI_Finalize();
+        return(0);
+    }
+
     System *system = new System();
     system->setup(myid, settings);
     StatisticsSampler *sampler = new StatisticsSampler(system);
@@ -57,7 +64,7 @@ int main(int args, char *argv[]) {
              << "      Disk IO           : " << system->mdtimer->io << " s ( " << 100*system->mdtimer->fraction_io() << "%)" <<  endl
              << "      MPI communication : " << system->mdtimer->mpi << " s ( " << 100*system->mdtimer->fraction_mpi() << "%)" <<  endl;
         cout << endl << settings->timesteps / total_time << " timesteps / second. " << endl;
-        cout << endl << system->num_atoms_global*settings->timesteps / (1000*total_time) << "k atom timesteps / second. " << endl;
+        cout << system->num_atoms_global*settings->timesteps / (1000*total_time) << "k atom-timesteps / second. " << endl;
     }
 
     MPI_Finalize();

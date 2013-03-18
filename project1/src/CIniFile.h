@@ -1,9 +1,13 @@
 #pragma once
 
+//using namespace std;
+
+
 #include <string>
 #include <vector>
-#include <cutil.h>
+#include <CUtil.h>
 #include <iostream>
+
 
 
 class CItem {
@@ -92,9 +96,6 @@ class CIniFile  {
     }
     throw string("Could not find any parameter '" + name +"'");
   }
-
-
-   
 
   CIniFile() { }
   ~CIniFile() { }

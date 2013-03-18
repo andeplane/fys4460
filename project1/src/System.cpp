@@ -36,6 +36,7 @@ void System::setup(int myid_, Settings *settings_) {
     velocities = new double[3*settings->num_atoms_max];
     atom_moved = new bool[settings->num_atoms_max];
     linked_list = new int[settings->num_atoms_max];
+    frozen_atom = new bool[settings->num_atoms_max];
     for(i=0;i<6;i++) move_queue[i] = new unsigned int[settings->num_atoms_max];
 
     steps = 0;
@@ -95,6 +96,7 @@ void System::create_FCC() {
                         velocities[3*num_atoms_local+0] = rnd->nextGauss()*sqrt(T*mass_inverse);
                         velocities[3*num_atoms_local+1] = rnd->nextGauss()*sqrt(T*mass_inverse);
                         velocities[3*num_atoms_local+2] = rnd->nextGauss()*sqrt(T*mass_inverse);
+                        frozen_atom[num_atoms_local] = false;
 
                         ek += 0.5*39.948*(velocities[3*num_atoms_local+0]*velocities[3*num_atoms_local+0]
                                 + velocities[3*num_atoms_local+1]*velocities[3*num_atoms_local+1]
@@ -302,6 +304,7 @@ void System::mpi_move() {
                     positions [3*(num_atoms_local+new_atoms+i) + a] = mpi_receive_buffer[6*i   + a];
                     velocities[3*(num_atoms_local+new_atoms+i) + a] = mpi_receive_buffer[6*i+3 + a];
                     atom_moved[num_atoms_local+new_atoms+i] = false;
+                    frozen_atom[num_atoms_local+new_atoms+i] = false;
                 }
             }
 
@@ -322,6 +325,7 @@ void System::mpi_move() {
                 positions [3*ipt+a] = positions [3*i+a];
                 velocities[3*ipt+a] = velocities[3*i+a];
             }
+            frozen_atom[ipt] = frozen_atom[i];
 
             ipt++;
         }
@@ -489,7 +493,7 @@ void System::calculate_accelerations() {
 void System::half_kick() {
     for(n=0;n<num_atoms_local;n++) {
         for(a=0;a<3;a++) {
-            velocities[3*n+a] += accelerations[3*n+a]*dt_half;
+            if(!frozen_atom[n]) velocities[3*n+a] += accelerations[3*n+a]*dt_half;
         }
     }
 }
@@ -497,7 +501,7 @@ void System::half_kick() {
 void System::full_kick() {
     for(n=0;n<num_atoms_local;n++) {
         for(a=0;a<3;a++) {
-            velocities[3*n+a] += accelerations[3*n+a]*dt;
+            if(!frozen_atom[n])  velocities[3*n+a] += accelerations[3*n+a]*dt;
         }
     }
 }

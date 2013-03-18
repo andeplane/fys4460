@@ -37,8 +37,8 @@ HEADERS += \
 mac {
     QMAKE_CXX = icc
     CONFIG -= app_bundle
-    LIBS   += -larmadillo -llapack -lblas
-    INCLUDEPATH += /usr/local/Cellar/boost/1.49.0/include/boost
+    LIBS   +=
+    INCLUDEPATH +=
     QMAKE_CXXFLAGS +=
     QMAKE_CXXFLAGS_RELEASE = $$QMAKE_CXXFLAGS
     QMAKE_CXXFLAGS_DEBUG = $$QMAKE_CXXFLAGS
@@ -46,7 +46,7 @@ mac {
 
 unix:!mac {
     QMAKE_CXX = mpic++
-    LIBS   += -larmadillo -llapack -lblas
+    LIBS   +=
     INCLUDEPATH +=
     QMAKE_CXXFLAGS +=
     QMAKE_CXXFLAGS_RELEASE = $$QMAKE_CXXFLAGS

@@ -61,6 +61,7 @@ public:
     unsigned int *move_queue[6];
     int  *head;
     bool *is_ghost_cell;
+    bool *frozen_atom;
     int *linked_list;
 
     int num_nodes;

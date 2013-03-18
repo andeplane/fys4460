@@ -471,7 +471,8 @@ void System::move() {
 }
 
 void System::step() {
-    if(myid==0 && !(steps % 100) ) cout << steps << endl;
+    // if(myid==0 && !(steps % 100) ) cout << steps << endl;
+    if(myid==0) cout << steps << endl;
     move();
     mpi_move();
     mpi_copy();

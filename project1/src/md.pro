@@ -38,7 +38,7 @@ HEADERS += \
     mdio.h
 
 mac {
-    QMAKE_CXX = icc
+    QMAKE_CXX = mpic++
     CONFIG -= app_bundle
     LIBS   += -larmadillo -llapack -lblas
     INCLUDEPATH += /usr/local/Cellar/boost/1.49.0/include/boost

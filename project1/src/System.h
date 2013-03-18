@@ -64,6 +64,7 @@ public:
     int *linked_list;
 
     int num_nodes;
+    double mass_inverse;
     unsigned long num_atoms_local;
     unsigned long num_atoms_global;
     unsigned long num_atoms_ghost;

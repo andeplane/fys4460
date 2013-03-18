@@ -11,8 +11,6 @@
 #include <random.h>
 
 using namespace std;
-#define MOVED_OUT -1.0e10
-
 System::System() {
 
 }
@@ -70,11 +68,12 @@ void System::create_FCC() {
     double r[3];
     double T = unit_converter->temperature_from_SI(settings->temperature);
 
+    double ek = 0;
+
     for(int x = 0; x < settings->nodes_x*settings->unit_cells_x; x++) {
         for(int y = 0; y < settings->nodes_y*settings->unit_cells_y; y++) {
             for(int z = 0; z < settings->nodes_z*settings->unit_cells_z; z++) {
                 for(int k = 0; k < 4; k++) {
-
                     // Set positions and type
                     r[0] = (x+xCell[k]) * settings->FCC_b - origo[0];
                     r[1] = (y+yCell[k]) * settings->FCC_b - origo[1];
@@ -90,9 +89,13 @@ void System::create_FCC() {
                             initial_positions[3*num_atoms_local+i] = r[i];
                         }
 
-                        velocities[3*num_atoms_local+0] = rnd->nextGauss()*sqrt(T);
-                        velocities[3*num_atoms_local+1] = rnd->nextGauss()*sqrt(T);
-                        velocities[3*num_atoms_local+2] = rnd->nextGauss()*sqrt(T);
+                        velocities[3*num_atoms_local+0] = rnd->nextGauss()*sqrt(T*mass_inverse);
+                        velocities[3*num_atoms_local+1] = rnd->nextGauss()*sqrt(T*mass_inverse);
+                        velocities[3*num_atoms_local+2] = rnd->nextGauss()*sqrt(T*mass_inverse);
+
+                        ek += 0.5*39.948*(velocities[3*num_atoms_local+0]*velocities[3*num_atoms_local+0]
+                                + velocities[3*num_atoms_local+1]*velocities[3*num_atoms_local+1]
+                                + velocities[3*num_atoms_local+2]*velocities[3*num_atoms_local+2]);
 
                         num_atoms_local++;
                     }
@@ -103,6 +106,7 @@ void System::create_FCC() {
 }
 
 void System::init_parameters() {
+    mass_inverse = 1.0/39.948;
     r_cut = settings->r_cut;
     dt = settings->dt;
     dt_half = dt/2;
@@ -390,12 +394,12 @@ void System::calculate_accelerations() {
     mdtimer->start_forces();
 
     bool is_local_atom;
-    double dr2, dr2_inverse, dr6_inverse, dr12_inverse, potential_energy_tmp, force;
+    double dr2, dr2_inverse, dr6_inverse, dr12_inverse, acceleration;
     double rr_cut = r_cut*r_cut;
 
     /* Reset the potential & forces */
     potential_energy = 0.0;
-    double potential_energy_local = 0;
+    double potential_energy_tmp = 0;
 
     for (i=0; i<num_atoms_local; i++) for (a=0; a<3; a++) accelerations[3*i+a] = 0.0;
 
@@ -410,6 +414,8 @@ void System::calculate_accelerations() {
         head[cell_index] = i;
     }
 
+    long force_count = 0;
+
     for (mc[0]=1; mc[0]<=num_cells_local[0]; mc[0]++) {
         for (mc[1]=1; mc[1]<=num_cells_local[1]; mc[1]++) {
             for (mc[2]=1; mc[2]<=num_cells_local[2]; mc[2]++) {
@@ -423,14 +429,13 @@ void System::calculate_accelerations() {
                             cell_index_from_vector(mc1,cell_index_2);
                             if(head[cell_index_2] == EMPTY) continue;
 
-                            // if(cell_index < cell_index_2) continue;
-
                             i = head[cell_index];
 
                             while (i != EMPTY) {
                                 j = head[cell_index_2];
                                 while (j != EMPTY) {
                                     if(i < j) {
+                                        force_count++;
                                         is_local_atom = j < num_atoms_local;
 
                                         /* Pair vector dr = r[i] - r[j] */
@@ -444,14 +449,14 @@ void System::calculate_accelerations() {
                                             dr6_inverse = pow(dr2_inverse,3);
                                             dr12_inverse = pow(dr6_inverse,2);
 
-                                            potential_energy_tmp = 2*(1.0/dr12_inverse - 1.0/dr6_inverse);
-                                            if(is_local_atom) potential_energy_local += 0.5*potential_energy_tmp;
-                                            else potential_energy_local += potential_energy_tmp;
+                                            potential_energy_tmp = 4*(1.0/dr12_inverse - 1.0/dr6_inverse);
+                                            if(is_local_atom) potential_energy += potential_energy_tmp;
+                                            else potential_energy += 0.5*potential_energy_tmp;
 
                                             for(a=0;a<3;a++) {
-                                                force = 24*(2.0*dr12_inverse-dr6_inverse)*dr2_inverse*dr[a];
-                                                accelerations[3*i+a] += force;
-                                                if(is_local_atom) accelerations[3*j+a] -= force;
+                                                acceleration = 24*(2.0*dr12_inverse-dr6_inverse)*dr2_inverse*dr[a]*mass_inverse;
+                                                accelerations[3*i+a] += acceleration;
+                                                if(is_local_atom) accelerations[3*j+a] -= acceleration;
                                             }
                                         }
                                     } // if( i != j) {
@@ -470,6 +475,7 @@ void System::calculate_accelerations() {
             } // for mc[2]
         } // for mc[1]
     } // for mc[0]
+    // cout << "Atoms: " << potential_energy_count << endl;
     mdtimer->end_forces();
 }
 

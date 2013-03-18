@@ -46,7 +46,6 @@ void MDIO::save_state_to_movie_file() {
 
 void MDIO::save_state_to_file_binary() {
     system->mdtimer->start_io();
-    if(system->myid==0) cout << "Saving state to file..." << endl;
 
     char *filename = new char[100];
     sprintf(filename,"state_files/state%04d.bin",system->myid);

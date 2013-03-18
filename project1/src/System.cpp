@@ -55,8 +55,9 @@ void System::setup(int myid_, Settings *settings_) {
     calculate_accelerations();
     half_kick();
 
-    if(myid==0) cout << "System size: " << system_length[0] << " " << system_length[1] << " " << system_length[2] << endl;
+    if(myid==0) cout << "System size: " << unit_converter->length_to_SI(system_length[0])*1e10 << " Å " << unit_converter->length_to_SI(system_length[1])*1e10 << " Å " << unit_converter->length_to_SI(system_length[2])*1e10 << " Å" << endl;
     if(myid==0) cout << "Atoms: " << num_atoms_global << endl;
+    if(myid==0) cout << "Processors: " << num_nodes << " (" << settings->nodes_x << "," << settings->nodes_y << "," << settings->nodes_z << ")" << endl;
     mdtimer->end_system_initialize();
 }
 

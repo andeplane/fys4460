@@ -22,7 +22,8 @@ private:
     void move();
     void set_topology();
     void create_FCC();
-    inline int atom_did_change_node(double* ri, int ku);
+    inline bool atom_did_change_node(double* ri, int ku);
+    inline bool atom_should_be_copied(double *ri, int ku);
 public:
     Settings *settings;
     MDIO *mdio;

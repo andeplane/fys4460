@@ -61,6 +61,8 @@ void System::setup(int myid_, Settings *settings_) {
     mdio->setup(this);
     set_topology();
     create_FCC();
+    mpi_copy();
+    calculate_accelerations();
     half_kick();
 
     if(myid==0) cout << "System size: " << box_length_full[0] << " " << box_length_full[1] << " " << box_length_full[2] << endl;
@@ -109,7 +111,62 @@ void System::create_FCC() {
 }
 
 void System::mpi_copy() {
+    MPI_Status status;
 
+    int node_id, num_send, num_receive;
+    int new_ghost_atoms = 0;
+    short higher, local_node_id;
+    for(short dimension=0;dimension<3;dimension++) {
+        for (higher=0; higher<2; higher++) move_queue[2*dimension+higher][0] = 0;
+        for(i=0;i<num_atoms_local+new_ghost_atoms;i++) {
+            for(higher=0;higher<2;higher++) {
+                local_node_id = 2*dimension + higher;
+                if (atom_should_be_copied(&positions[3*i],local_node_id)) move_queue[local_node_id][++(move_queue[local_node_id][0])] = i;
+            }
+        }
+
+        /* Loop through higher and lower node in this dimension */
+        for(higher=0;higher<2;higher++) {
+            local_node_id= 2*dimension+higher;
+            node_id = neighbor_nodes[local_node_id];
+            num_send = move_queue[local_node_id][0];
+
+            if (my_parity[dimension] == 0) {
+                MPI_Send(&num_send,1,MPI_INT,node_id,10,MPI_COMM_WORLD);
+                MPI_Recv(&num_receive,1,MPI_INT,MPI_ANY_SOURCE,10,MPI_COMM_WORLD,&status);
+            }
+            else if (my_parity[dimension] == 1) {
+                MPI_Recv(&num_receive,1,MPI_INT,MPI_ANY_SOURCE,10,MPI_COMM_WORLD,&status);
+                MPI_Send(&num_send,1,MPI_INT,node_id,10,MPI_COMM_WORLD);
+            }
+            else num_receive = num_send;
+
+            for (i=1; i<=num_send; i++) {
+                for (a=0; a<3; a++) { /* Shift the coordinate origin */
+                  mpi_send_buffer[3*(i-1)+a] = positions[ 3*move_queue[local_node_id][i] + a]-shift_vector[local_node_id][a];
+                }
+            }
+
+            if (my_parity[dimension] == 0) {
+                MPI_Send(mpi_send_buffer,3*num_send,MPI_DOUBLE,node_id,20,MPI_COMM_WORLD);
+                MPI_Recv(mpi_receive_buffer,3*num_receive,MPI_DOUBLE,MPI_ANY_SOURCE,20,MPI_COMM_WORLD,&status);
+            }
+            else if (my_parity[dimension] == 1) {
+                MPI_Recv(mpi_receive_buffer,3*num_receive,MPI_DOUBLE,MPI_ANY_SOURCE,20,MPI_COMM_WORLD,&status);
+                MPI_Send(mpi_send_buffer,3*num_send,MPI_DOUBLE,node_id,20,MPI_COMM_WORLD);
+            }
+            else for (i=0; i<3*num_receive; i++) mpi_receive_buffer[i] = mpi_send_buffer[i];
+
+            for (i=0; i<num_receive; i++) {
+                for (a=0; a<3; a++) positions[ 3*(num_atoms_local+new_ghost_atoms+i) + a] = mpi_receive_buffer[3*i+a];
+            }
+
+            new_ghost_atoms += num_receive;
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+    }
+
+    num_atoms_ghost = new_ghost_atoms;
 }
 
 void System::set_topology() {
@@ -126,8 +183,6 @@ void System::set_topology() {
 
     int k1[3];
 
-    cout << "Shift vectors: " << endl;
-
     /* Set up neighbor tables, nn & sv */
     for (int ku=0; ku<6; ku++) {
         /* Vector index of neighbor ku */
@@ -139,7 +194,6 @@ void System::set_topology() {
         neighbor_nodes[ku] = k1[0]*num_processors[1]*num_processors[2]+k1[1]*num_processors[2]+k1[2];
         /* Shift vector, sv */
         for (a=0; a<3; a++) shift_vector[ku][a] = box_length[a]*iv[ku][a];
-        cout << shift_vector[ku][0] << " " <<  shift_vector[ku][1] << " " << shift_vector[ku][2] << endl;
     }
 
 
@@ -156,7 +210,16 @@ void System::set_topology() {
     }
 }
 
-inline int System::atom_did_change_node(double* ri, int ku) {
+inline bool System::atom_should_be_copied(double* ri, int ku) {
+  int dimension,higher;
+  dimension = ku/2; /* x(0)|y(1)|z(2) direction */
+  higher = ku%2; /* Lower(0)|higher(1) direction */
+  if (higher == 0) return ri[dimension] < r_cut;
+  else return ri[dimension] > box_length[dimension]-r_cut;
+}
+
+
+inline bool System::atom_did_change_node(double* ri, int ku) {
     int dimension,higher;
     dimension = ku/2;    /* x(0)|y(1)|z(2) direction */
     higher = ku%2; /* Lower(0)|higher(1) direction */
@@ -298,8 +361,9 @@ void System::move() {
 }
 
 void System::step() {
-    cout << "Stepping " << steps << endl;
+    if(myid==0 && !(steps % 100) ) cout << steps << endl;
     move();
     mpi_move();
+    mpi_copy();
     steps++;
 }

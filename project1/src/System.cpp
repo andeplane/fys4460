@@ -61,7 +61,6 @@ void System::create_FCC() {
     double r[3];
     double T = unit_converter->temperature_from_SI(settings->temperature);
 
-    double ek = 0;
     bool warning_shown = false;
 
     for(int x = 0; x < settings->nodes_x*settings->unit_cells_x; x++) {
@@ -79,17 +78,13 @@ void System::create_FCC() {
 
                     if(is_mine) {
                         for(i=0;i<3;i++) {
-                            positions[3*num_atoms_local+i] = r[i];
-                            initial_positions[3*num_atoms_local+i] = r[i];
+                            positions[num_atoms_local][i] = r[i];
+                            initial_positions[num_atoms_local][i] = r[i];
                         }
-                        velocities[3*num_atoms_local+0] = rnd->nextGauss()*sqrt(T*mass_inverse);
-                        velocities[3*num_atoms_local+1] = rnd->nextGauss()*sqrt(T*mass_inverse);
-                        velocities[3*num_atoms_local+2] = rnd->nextGauss()*sqrt(T*mass_inverse);
+                        velocities[num_atoms_local][0] = rnd->nextGauss()*sqrt(T*mass_inverse);
+                        velocities[num_atoms_local][1] = rnd->nextGauss()*sqrt(T*mass_inverse);
+                        velocities[num_atoms_local][2] = rnd->nextGauss()*sqrt(T*mass_inverse);
                         frozen_atom[num_atoms_local] = false;
-
-                        ek += 0.5*39.948*(velocities[3*num_atoms_local+0]*velocities[3*num_atoms_local+0]
-                                + velocities[3*num_atoms_local+1]*velocities[3*num_atoms_local+1]
-                                + velocities[3*num_atoms_local+2]*velocities[3*num_atoms_local+2]);
 
                         num_atoms_local++;
                         if(!warning_shown && num_atoms_local >= 0.6*MAX_PARTICLE_NUM) {
@@ -238,8 +233,8 @@ void System::mpi_move() {
             /* Register a to-be-copied atom in move_queue[kul|kuh][] */
             if (!atom_moved[i]) { /* Don't scan moved-out atoms */
                 // Check if this atom moved
-                if (atom_did_change_node(&positions[3*i],node_lower)) move_queue[node_lower][ ++move_queue[node_lower][0] ] = i;
-                else if (atom_did_change_node(&positions[3*i],node_higher)) move_queue[node_higher][ ++move_queue[node_higher][0] ] = i;
+                if (atom_did_change_node(positions[i],node_lower)) move_queue[node_lower][ ++move_queue[node_lower][0] ] = i;
+                else if (atom_did_change_node(positions[i],node_higher)) move_queue[node_higher][ ++move_queue[node_higher][0] ] = i;
             }
         }
 
@@ -273,8 +268,8 @@ void System::mpi_move() {
             for (i=1; i<=num_send; i++) {
                 for (a=0; a<3; a++) {
                     /* Shift the coordinate origin */
-                    mpi_send_buffer[6*(i-1)    + a] = positions[ 3*move_queue[local_node_id][i]+a] - shift_vector[local_node_id][a];
-                    mpi_send_buffer[6*(i-1)+ 3 + a] = velocities[3*move_queue[local_node_id][i]+a];
+                    mpi_send_buffer[6*(i-1)    + a] = positions[ move_queue[local_node_id][i]][a] - shift_vector[local_node_id][a];
+                    mpi_send_buffer[6*(i-1)+ 3 + a] = velocities[move_queue[local_node_id][i]][a];
                     atom_moved[ move_queue[local_node_id][i] ] = true;
                 }
             }
@@ -295,9 +290,9 @@ void System::mpi_move() {
             /* Message storing */
             for (i=0; i<num_receive; i++) {
                 for (a=0; a<3; a++) {
-                    positions [3*(num_atoms_local+new_atoms+i) + a] = mpi_receive_buffer[6*i   + a];
+                    positions [(num_atoms_local+new_atoms+i)][a] = mpi_receive_buffer[6*i   + a];
                     frozen_atom[num_atoms_local+new_atoms+i] = false;
-                    velocities[3*(num_atoms_local+new_atoms+i) + a] = mpi_receive_buffer[6*i+3 + a];
+                    velocities[(num_atoms_local+new_atoms+i)][a] = mpi_receive_buffer[6*i+3 + a];
                     atom_moved[num_atoms_local+new_atoms+i] = false;
 
                 }
@@ -317,8 +312,8 @@ void System::mpi_move() {
     for (i=0; i<num_atoms_local+new_atoms; i++) {
         if (!atom_moved[i]) {
             for (a=0; a<3; a++) {
-                positions [3*ipt+a] = positions [3*i+a];
-                velocities[3*ipt+a] = velocities[3*i+a];
+                positions [ipt][a] = positions [i][a];
+                velocities[ipt][a] = velocities[i][a];
             }
             frozen_atom[ipt] = frozen_atom[i];
 
@@ -341,7 +336,7 @@ void System::mpi_copy() {
         for(i=0;i<num_atoms_local+new_ghost_atoms;i++) {
             for(higher=0;higher<2;higher++) {
                 local_node_id = 2*dimension + higher;
-                if (atom_should_be_copied(&positions[3*i],local_node_id)) move_queue[local_node_id][++(move_queue[local_node_id][0])] = i;
+                if (atom_should_be_copied(positions[i],local_node_id)) move_queue[local_node_id][++(move_queue[local_node_id][0])] = i;
             }
         }
 
@@ -365,7 +360,7 @@ void System::mpi_copy() {
 
             for (i=1; i<=num_send; i++) {
                 for (a=0; a<3; a++) { /* Shift the coordinate origin */
-                  mpi_send_buffer[3*(i-1)+a] = positions[ 3*move_queue[local_node_id][i] + a]-shift_vector[local_node_id][a];
+                  mpi_send_buffer[3*(i-1)+a] = positions[ move_queue[local_node_id][i]][a]-shift_vector[local_node_id][a];
                 }
             }
 
@@ -380,7 +375,7 @@ void System::mpi_copy() {
             else for (i=0; i<3*num_receive; i++) mpi_receive_buffer[i] = mpi_send_buffer[i];
 
             for (i=0; i<num_receive; i++) {
-                for (a=0; a<3; a++) positions[ 3*(num_atoms_local+new_ghost_atoms+i) + a] = mpi_receive_buffer[3*i+a];
+                for (a=0; a<3; a++) positions[ (num_atoms_local+new_ghost_atoms+i) ][a] = mpi_receive_buffer[3*i+a];
             }
 
             new_ghost_atoms += num_receive;
@@ -402,11 +397,11 @@ void System::calculate_accelerations() {
     /* Reset the potential & forces */
     potential_energy = 0.0;
     pressure_forces = 0;
-    for (i=0; i<num_atoms_local; i++) for (a=0; a<3; a++) accelerations[3*i+a] = 0.0;
+    for (i=0; i<num_atoms_local; i++) for (a=0; a<3; a++) accelerations[i][a] = 0.0;
     for (c=0; c<num_cells_including_ghosts_xyz; c++) head[c] = EMPTY;
 
     for (i=0; i<num_atoms_local+num_atoms_ghost; i++) {
-        for (a=0; a<3; a++) mc[a] = (positions[3*i+a]+cell_length[a])/cell_length[a];
+        for (a=0; a<3; a++) mc[a] = (positions[i][a]+cell_length[a])/cell_length[a];
 
         cell_index_from_vector(mc,cell_index);
 
@@ -438,7 +433,7 @@ void System::calculate_accelerations() {
 
                                         /* Pair vector dr = r[i] - r[j] */
                                         for (dr2=0.0, a=0; a<3; a++) {
-                                            dr[a] = positions[3*i+a]-positions[3*j+a];
+                                            dr[a] = positions[i][a]-positions[j][a];
                                             dr2 += dr[a]*dr[a];
                                         }
 
@@ -453,10 +448,10 @@ void System::calculate_accelerations() {
 
                                             for(a=0;a<3;a++) {
                                                 double force = 24*(2.0*dr12_inverse-dr6_inverse)*dr2_inverse*dr[a];
-                                                accelerations[3*i+a] += force*mass_inverse;
+                                                accelerations[i][a] += force*mass_inverse;
 
                                                 if(is_local_atom) {
-                                                    accelerations[3*j+a] -= force*mass_inverse;
+                                                    accelerations[j][a] -= force*mass_inverse;
                                                     pressure_forces += force*dr[a];
                                                 } else pressure_forces += 0.5*force*dr[a];
                                             }
@@ -484,7 +479,7 @@ void System::calculate_accelerations() {
 void System::half_kick() {
     for(n=0;n<num_atoms_local;n++) {
         for(a=0;a<3;a++) {
-            if(!frozen_atom[n]) velocities[3*n+a] += accelerations[3*n+a]*dt_half;
+            if(!frozen_atom[n]) velocities[n][a] += accelerations[n][a]*dt_half;
         }
     }
 }
@@ -492,7 +487,7 @@ void System::half_kick() {
 void System::full_kick() {
     for(n=0;n<num_atoms_local;n++) {
         for(a=0;a<3;a++) {
-            if(!frozen_atom[n]) velocities[3*n+a] += accelerations[3*n+a]*dt;
+            if(!frozen_atom[n]) velocities[n][a] += accelerations[n][a]*dt;
         }
     }
 }
@@ -501,7 +496,7 @@ void System::move() {
     mdtimer->start_moving();
     for(n=0;n<num_atoms_local;n++) {
         for(a=0;a<3;a++) {
-            positions[3*n+a] += velocities[3*n+a]*dt;
+            positions[n][a] += velocities[n][a]*dt;
         }
 
         atom_moved[n] = false;

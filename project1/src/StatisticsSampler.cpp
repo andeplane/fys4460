@@ -24,7 +24,7 @@ void StatisticsSampler::sample_kinetic_energy() {
     double kinetic_energy_global = 0;
 
     for(unsigned int i=0;i<system->num_atoms_local;i++) {
-        kinetic_energy += 0.5*argon_mass*(system->velocities[3*i+0]*system->velocities[3*i+0] + system->velocities[3*i+1]*system->velocities[3*i+1] + system->velocities[3*i+2]*system->velocities[3*i+2]);
+        kinetic_energy += 0.5*argon_mass*(system->velocities[i][0]*system->velocities[i][0] + system->velocities[i][1]*system->velocities[i][1] + system->velocities[i][2]*system->velocities[i][2]);
     }
     MPI_Allreduce(&kinetic_energy, &kinetic_energy_global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 

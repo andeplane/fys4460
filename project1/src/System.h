@@ -66,12 +66,12 @@ public:
     double shift_vector[6][3];
     double mpi_send_buffer[3*MAX_PARTICLE_NUM];
     double mpi_receive_buffer[3*MAX_PARTICLE_NUM];
-    bool atom_moved[3*MAX_PARTICLE_NUM];
-    double positions[3*MAX_PARTICLE_NUM];
-    double accelerations[3*MAX_PARTICLE_NUM];
+    bool atom_moved[MAX_PARTICLE_NUM];
+    double positions[MAX_PARTICLE_NUM][3];
+    double accelerations[MAX_PARTICLE_NUM][3];
     double mass_inverse, pressure_forces;
-    double velocities[3*MAX_PARTICLE_NUM];
-    double initial_positions[3*MAX_PARTICLE_NUM];
+    double velocities[MAX_PARTICLE_NUM][3];
+    double initial_positions[MAX_PARTICLE_NUM][3];
     unsigned int move_queue[6][MAX_PARTICLE_NUM];
     bool frozen_atom[MAX_PARTICLE_NUM];
     int linked_list[MAX_PARTICLE_NUM];

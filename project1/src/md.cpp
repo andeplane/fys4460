@@ -36,15 +36,12 @@ int main(int args, char *argv[]) {
 
     System *system = new System();
     system->setup(myid, settings);
-    StatisticsSampler *sampler = new StatisticsSampler(system);
     Thermostat thermostat(settings->thermostat_relaxation_time);
-
-    sampler->sample();
 
     for(int i=0;i<settings->timesteps;i++) {
         system->step();
-        sampler->sample();
-        if(settings->thermostat_enabled) thermostat.apply(sampler,system,settings->temperature);
+        // sampler->sample();
+        if(settings->thermostat_enabled) thermostat.apply(system->sampler,system,settings->temperature);
 
         system->mdio->save_state_to_movie_file();
 	}

@@ -10,6 +10,7 @@
 #include <mdtimer.h>
 #include <random.h>
 #include <atom.h>
+#include <statisticssampler.h>
 
 using namespace std;
 System::System() {
@@ -20,6 +21,7 @@ void System::setup(int myid_, Settings *settings_) {
     mdtimer = new MDTimer();
     mdtimer->start_system_initialize();
     unit_converter = new UnitConverter();
+    sampler = new StatisticsSampler(this);
 
     myid = myid_;
     settings = settings_;
@@ -410,6 +412,9 @@ void System::calculate_accelerations() {
         head[cell_index] = i;
     }
 
+    double dr2_inverse, dr6_inverse, dr12_inverse;
+    bool will_sample = settings->statistics_interval && steps % settings->statistics_interval == 0;
+
     for (mc[0]=1; mc[0]<=num_cells_local[0]; mc[0]++) {
         for (mc[1]=1; mc[1]<=num_cells_local[1]; mc[1]++) {
             for (mc[2]=1; mc[2]<=num_cells_local[2]; mc[2]++) {
@@ -423,38 +428,46 @@ void System::calculate_accelerations() {
                             cell_index_from_vector(mc1,cell_index_2);
                             if(head[cell_index_2] == EMPTY) continue;
 
-                            int i = head[cell_index];
+                            i = head[cell_index];
 
-                            while (i != EMPTY) {
-                                int j = head[cell_index_2];
-                                while (j != EMPTY) {
+                            while (i > EMPTY) {
+                                j = head[cell_index_2];
+                                while (j > EMPTY) {
                                     if(i < j) {
                                         bool is_local_atom = j < num_atoms_local;
-
                                         /* Pair vector dr = r[i] - r[j] */
-                                        for (dr2=0.0, a=0; a<3; a++) {
-                                            dr[a] = positions[i][a]-positions[j][a];
-                                            dr2 += dr[a]*dr[a];
-                                        }
+                                        dr2 = 0;
+                                        dr[0] = positions[i][0]-positions[j][0];
+                                        dr[1] = positions[i][1]-positions[j][1];
+                                        dr[2] = positions[i][2]-positions[j][2];
+                                        dr2 = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
 
                                         if (dr2<rr_cut) {
-                                            double dr2_inverse = 1.0/dr2;
-                                            double dr6_inverse = pow(dr2_inverse,3);
-                                            double dr12_inverse = pow(dr6_inverse,2);
+                                            dr2_inverse = 1.0/dr2;
+                                            dr6_inverse = dr2_inverse*dr2_inverse*dr2_inverse;
+                                            dr12_inverse = dr6_inverse*dr6_inverse;
 
-                                            double potential_energy_tmp = 4*(1.0/dr12_inverse - 1.0/dr6_inverse);
-                                            if(is_local_atom) potential_energy += potential_energy_tmp;
-                                            else potential_energy += 0.5*potential_energy_tmp;
-
-                                            for(a=0;a<3;a++) {
-                                                double force = 24*(2.0*dr12_inverse-dr6_inverse)*dr2_inverse*dr[a];
-                                                accelerations[3*i+a] += force*mass_inverse;
-
-                                                if(is_local_atom) {
-                                                    accelerations[3*j+a] -= force*mass_inverse;
-                                                    pressure_forces += force*dr[a];
-                                                } else pressure_forces += 0.5*force*dr[a];
+                                            if(will_sample) {
+                                                double potential_energy_tmp = 4*(1.0*dr12_inverse - 1.0*dr6_inverse);
+                                                if(is_local_atom) potential_energy += potential_energy_tmp;
+                                                else potential_energy += 0.5*potential_energy_tmp;
                                             }
+
+
+                                            double force = (48*dr12_inverse-24*dr6_inverse)*dr2_inverse*mass_inverse;
+                                            accelerations[3*i+0] += force*dr[0];
+                                            accelerations[3*i+1] += force*dr[1];
+                                            accelerations[3*i+2] += force*dr[2];
+
+
+                                            if(is_local_atom) {
+                                                accelerations[3*j+0] -= force*dr[0];
+                                                accelerations[3*j+1] -= force*dr[1];
+                                                accelerations[3*j+2] -= force*dr[2];
+                                                pressure_forces += force*dr2;
+                                            } else pressure_forces += 0.5*force*dr2;
+
+
                                         }
                                     } // if( i != j) {
 
@@ -473,6 +486,7 @@ void System::calculate_accelerations() {
         } // for mc[1]
     } // for mc[0]
     // cout << "Atoms: " << potential_energy_count << endl;
+    pressure_forces /= mass_inverse;
     mdtimer->end_forces();
 }
 
@@ -505,11 +519,12 @@ void System::move() {
 }
 
 void System::step() {
+    steps++;
     move();
     mpi_move();
     mpi_copy();
     calculate_accelerations();
     full_kick();
-    steps++;
     t += dt;
+    if(settings->statistics_interval && steps % settings->statistics_interval == 0) sampler->sample();
 }

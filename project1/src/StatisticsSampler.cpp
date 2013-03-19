@@ -66,8 +66,6 @@ void StatisticsSampler::sample_pressure() {
 }
 
 void StatisticsSampler::sample() {
-    if(!settings->statistics_interval || system->steps % settings->statistics_interval != 0) return;
-
     system->mdtimer->start_sampling();
     double t_in_pico_seconds = system->unit_converter->time_to_SI(system->t)*1e12;
 

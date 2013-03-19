@@ -7,6 +7,7 @@ class MDIO;
 class MDTimer;
 class Random;
 class UnitConverter;
+class StatisticsSampler;
 
 #include <fstream>
 #include <vector>
@@ -38,6 +39,7 @@ public:
     Random *rnd;
     MDTimer *mdtimer;
     UnitConverter *unit_converter;
+    StatisticsSampler *sampler;
     int  *head;
 
     unsigned long steps;

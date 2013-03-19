@@ -12,7 +12,7 @@
 #include <mpi.h>
 #include <mdio.h>
 #include <mdtimer.h>
-#include <iomanip.h>
+#include <iomanip>
 #include <thermostat.h>
 
 using namespace arma;

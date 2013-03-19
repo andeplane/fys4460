@@ -5,7 +5,7 @@
 #include <system.h>
 #include <mpi.h>
 #include <mdtimer.h>
-#include <iomanip.h>
+#include <iomanip>
 
 StatisticsSampler::StatisticsSampler(System *system_) {
     system = system_;

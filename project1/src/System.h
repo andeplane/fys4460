@@ -11,6 +11,7 @@ class UnitConverter;
 #include <fstream>
 #include <vector>
 #define MAX_PARTICLE_NUM 100000
+#define MAX_CELL_NUM 1000
 #define EMPTY -1
 
 using namespace std;
@@ -46,10 +47,8 @@ public:
     unsigned int node_index[3];
     unsigned int num_processors[3];
     unsigned int neighbor_nodes[6];
-    double shift_vector[6][3];
     unsigned int mc[3];  // Usually cell index vector
     unsigned int mc1[3]; // Usually cell index vector
-    double dr[3];
     short my_parity[3];
     double cell_length[3];
     double node_length[3];
@@ -69,6 +68,8 @@ public:
 
     double origo[3];
 
+    double shift_vector[6][3];
+    double dr[3];
     double mpi_send_buffer[3*MAX_PARTICLE_NUM];
     double mpi_receive_buffer[3*MAX_PARTICLE_NUM];
     bool atom_moved[3*MAX_PARTICLE_NUM];
@@ -76,11 +77,12 @@ public:
     double accelerations[3*MAX_PARTICLE_NUM];
     double velocities[3*MAX_PARTICLE_NUM];
     double initial_positions[3*MAX_PARTICLE_NUM];
-    unsigned int *move_queue[6];
-    bool *frozen_atom;
+    unsigned int move_queue[6][MAX_PARTICLE_NUM];
+    bool frozen_atom[MAX_PARTICLE_NUM];
+    int linked_list[MAX_PARTICLE_NUM];
     int  *head;
-    bool *is_ghost_cell;
-    int *linked_list;
+    bool is_ghost_cell[MAX_CELL_NUM];
+
 
     System();
     void setup(int myid_, Settings *settings_);

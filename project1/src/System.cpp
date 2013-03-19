@@ -28,10 +28,6 @@ void System::setup(int myid_, Settings *settings_) {
     num_atoms_ghost = 0;
     num_nodes = settings->nodes_x*settings->nodes_y*settings->nodes_z;
 
-    linked_list = new int[settings->num_atoms_max];
-    frozen_atom = new bool[settings->num_atoms_max];
-    for(i=0;i<6;i++) move_queue[i] = new unsigned int[settings->num_atoms_max];
-
     steps = 0;
     rnd = new Random(-(myid+1));
 
@@ -136,7 +132,8 @@ void System::init_parameters() {
     num_cells_including_ghosts_yz = num_cells_including_ghosts[1]*num_cells_including_ghosts[2];
     num_cells_including_ghosts_xyz = num_cells_including_ghosts_yz*num_cells_including_ghosts[0];
     head = new int[num_cells_including_ghosts_xyz];
-    is_ghost_cell = new bool[num_cells_including_ghosts_xyz];
+    // cout << num_cells_including_ghosts_xyz << endl;
+    // is_ghost_cell = new bool[num_cells_including_ghosts_xyz];
     for(int cx=0;cx<num_cells_local[0]+2;cx++) {
         for(int cy=0;cy<num_cells_local[1]+2;cy++) {
             for(int cz=0;cz<num_cells_local[2]+2;cz++) {
@@ -509,7 +506,6 @@ void System::move() {
 }
 
 void System::step() {
-    cout << "Stepping " << steps << endl;
     move();
     mpi_move();
     mpi_copy();

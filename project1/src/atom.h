@@ -4,9 +4,6 @@ class Atom
 {
 public:
     Atom();
-    double *r;
-    double *v;
-    double *a;
-    double *r_initial;
-
+    double r[3];
+    double a[3];
 };

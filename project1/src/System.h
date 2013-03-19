@@ -10,7 +10,7 @@ class UnitConverter;
 
 #include <fstream>
 #include <vector>
-
+#define MAX_PARTICLE_NUM 100000
 #define EMPTY -1
 
 using namespace std;
@@ -38,6 +38,7 @@ public:
     MDTimer *mdtimer;
     UnitConverter *unit_converter;
 
+
     unsigned int num_cells_including_ghosts_yz;
     unsigned int num_cells_including_ghosts_xyz;
     unsigned long steps;
@@ -55,14 +56,6 @@ public:
     double system_length[3];
     unsigned int num_cells_local[3];
     unsigned int num_cells_including_ghosts[3];
-    double *mpi_send_buffer;
-    double *mpi_receive_buffer;
-    bool *atom_moved;
-    unsigned int *move_queue[6];
-    int  *head;
-    bool *is_ghost_cell;
-    bool *frozen_atom;
-    int *linked_list;
 
     int num_nodes;
     double mass_inverse, pressure_forces;
@@ -74,11 +67,20 @@ public:
 
     double r_cut, dt, dt_half, potential_energy, t, volume;
 
-    double *positions;
-    double *initial_positions;
-    double *accelerations;
-    double *velocities;
     double origo[3];
+
+    double mpi_send_buffer[3*MAX_PARTICLE_NUM];
+    double mpi_receive_buffer[3*MAX_PARTICLE_NUM];
+    bool atom_moved[3*MAX_PARTICLE_NUM];
+    double positions[3*MAX_PARTICLE_NUM];
+    double accelerations[3*MAX_PARTICLE_NUM];
+    double velocities[3*MAX_PARTICLE_NUM];
+    double initial_positions[3*MAX_PARTICLE_NUM];
+    unsigned int *move_queue[6];
+    bool *frozen_atom;
+    int  *head;
+    bool *is_ghost_cell;
+    int *linked_list;
 
     System();
     void setup(int myid_, Settings *settings_);

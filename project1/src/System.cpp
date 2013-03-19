@@ -9,6 +9,7 @@
 #include <unitconverter.h>
 #include <mdtimer.h>
 #include <random.h>
+#include <atom.h>
 
 using namespace std;
 System::System() {
@@ -27,14 +28,6 @@ void System::setup(int myid_, Settings *settings_) {
     num_atoms_ghost = 0;
     num_nodes = settings->nodes_x*settings->nodes_y*settings->nodes_z;
 
-    mpi_send_buffer = new double[settings->num_atoms_max];
-    mpi_receive_buffer = new double[settings->num_atoms_max];
-
-    positions = new double[3*settings->num_atoms_max];
-    initial_positions = new double[3*settings->num_atoms_max];
-    accelerations = new double[3*settings->num_atoms_max];
-    velocities = new double[3*settings->num_atoms_max];
-    atom_moved = new bool[settings->num_atoms_max];
     linked_list = new int[settings->num_atoms_max];
     frozen_atom = new bool[settings->num_atoms_max];
     for(i=0;i<6;i++) move_queue[i] = new unsigned int[settings->num_atoms_max];
@@ -92,7 +85,6 @@ void System::create_FCC() {
                             positions[3*num_atoms_local+i] = r[i];
                             initial_positions[3*num_atoms_local+i] = r[i];
                         }
-
                         velocities[3*num_atoms_local+0] = rnd->nextGauss()*sqrt(T*mass_inverse);
                         velocities[3*num_atoms_local+1] = rnd->nextGauss()*sqrt(T*mass_inverse);
                         velocities[3*num_atoms_local+2] = rnd->nextGauss()*sqrt(T*mass_inverse);
@@ -240,7 +232,6 @@ void System::mpi_move() {
         for (i=0; i<num_atoms_local+new_atoms; i++) {
             node_lower = 2*dimension;
             node_higher = 2*dimension+1;
-
             /* Register a to-be-copied atom in move_queue[kul|kuh][] */
             if (!atom_moved[i]) { /* Don't scan moved-out atoms */
                 // Check if this atom moved
@@ -279,7 +270,7 @@ void System::mpi_move() {
             for (i=1; i<=num_send; i++) {
                 for (a=0; a<3; a++) {
                     /* Shift the coordinate origin */
-                    mpi_send_buffer[6*(i-1)    + a] = positions [3*move_queue[local_node_id][i]+a] - shift_vector[local_node_id][a];
+                    mpi_send_buffer[6*(i-1)    + a] = positions[ 3*move_queue[local_node_id][i]+a] - shift_vector[local_node_id][a];
                     mpi_send_buffer[6*(i-1)+ 3 + a] = velocities[3*move_queue[local_node_id][i]+a];
                     atom_moved[ move_queue[local_node_id][i] ] = true;
                 }
@@ -302,9 +293,10 @@ void System::mpi_move() {
             for (i=0; i<num_receive; i++) {
                 for (a=0; a<3; a++) {
                     positions [3*(num_atoms_local+new_atoms+i) + a] = mpi_receive_buffer[6*i   + a];
+                    frozen_atom[num_atoms_local+new_atoms+i] = false;
                     velocities[3*(num_atoms_local+new_atoms+i) + a] = mpi_receive_buffer[6*i+3 + a];
                     atom_moved[num_atoms_local+new_atoms+i] = false;
-                    frozen_atom[num_atoms_local+new_atoms+i] = false;
+
                 }
             }
 
@@ -333,12 +325,11 @@ void System::mpi_move() {
 
     /* Update the compressed # of resident atoms */
     num_atoms_local = ipt;
-
 }
 
 void System::mpi_copy() {
     MPI_Status status;
-
+    Atom *atom, *atom1;
     int node_id, num_send, num_receive;
     int new_ghost_atoms = 0;
     short higher, local_node_id;
@@ -410,13 +401,12 @@ void System::calculate_accelerations() {
     potential_energy = 0.0;
     pressure_forces = 0;
     double potential_energy_tmp = 0;
-
     for (i=0; i<num_atoms_local; i++) for (a=0; a<3; a++) accelerations[3*i+a] = 0.0;
-
     for (c=0; c<num_cells_including_ghosts_xyz; c++) head[c] = EMPTY;
 
     for (i=0; i<num_atoms_local+num_atoms_ghost; i++) {
         for (a=0; a<3; a++) mc[a] = (positions[3*i+a]+cell_length[a])/cell_length[a];
+
         cell_index_from_vector(mc,cell_index);
 
         // Set this atom at the head of the linked list
@@ -462,8 +452,8 @@ void System::calculate_accelerations() {
 
                                             for(a=0;a<3;a++) {
                                                 force = 24*(2.0*dr12_inverse-dr6_inverse)*dr2_inverse*dr[a];
-
                                                 accelerations[3*i+a] += force*mass_inverse;
+
                                                 if(is_local_atom) {
                                                     accelerations[3*j+a] -= force*mass_inverse;
                                                     pressure_forces += force*dr[a];
@@ -501,7 +491,7 @@ void System::half_kick() {
 void System::full_kick() {
     for(n=0;n<num_atoms_local;n++) {
         for(a=0;a<3;a++) {
-            if(!frozen_atom[n])  velocities[3*n+a] += accelerations[3*n+a]*dt;
+            if(!frozen_atom[n]) velocities[3*n+a] += accelerations[3*n+a]*dt;
         }
     }
 }
@@ -519,6 +509,7 @@ void System::move() {
 }
 
 void System::step() {
+    cout << "Stepping " << steps << endl;
     move();
     mpi_move();
     mpi_copy();

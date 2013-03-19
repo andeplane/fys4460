@@ -414,6 +414,7 @@ void System::calculate_accelerations() {
 
     double dr2_inverse, dr6_inverse, dr12_inverse;
     bool will_sample = settings->statistics_interval && steps % settings->statistics_interval == 0;
+    double mass_inverse_24 = mass_inverse*24;
 
     for (mc[0]=1; mc[0]<=num_cells_local[0]; mc[0]++) {
         for (mc[1]=1; mc[1]<=num_cells_local[1]; mc[1]++) {
@@ -425,14 +426,13 @@ void System::calculate_accelerations() {
                 for (mc1[0]=mc[0]-1; mc1[0]<=mc[0]+1; mc1[0]++) {
                     for (mc1[1]=mc[1]-1; mc1[1]<=mc[1]+1; mc1[1]++) {
                         for (mc1[2]=mc[2]-1; mc1[2]<=mc[2]+1; mc1[2]++) {
-                            cell_index_from_vector(mc1,cell_index_2);
-                            if(head[cell_index_2] == EMPTY) continue;
-
+                            cell_index_from_vector(mc1,cell_index_2); // It is faster to use this function here by unknown reasons. The first cell_index is faster the other way.
+                            // if(head[cell_index_2] == EMPTY) continue;
                             i = head[cell_index];
 
-                            while (i > EMPTY) {
+                            while (i != EMPTY) {
                                 j = head[cell_index_2];
-                                while (j > EMPTY) {
+                                while (j != EMPTY) {
                                     if(i < j) {
                                         bool is_local_atom = j < num_atoms_local;
                                         /* Pair vector dr = r[i] - r[j] */
@@ -448,13 +448,13 @@ void System::calculate_accelerations() {
                                             dr12_inverse = dr6_inverse*dr6_inverse;
 
                                             if(will_sample) {
-                                                double potential_energy_tmp = 4*(1.0*dr12_inverse - 1.0*dr6_inverse);
+                                                double potential_energy_tmp = 4*(dr12_inverse - dr6_inverse);
                                                 if(is_local_atom) potential_energy += potential_energy_tmp;
                                                 else potential_energy += 0.5*potential_energy_tmp;
                                             }
 
 
-                                            double force = (48*dr12_inverse-24*dr6_inverse)*dr2_inverse*mass_inverse;
+                                            double force = (2*dr12_inverse-dr6_inverse)*dr2_inverse*mass_inverse_24;
                                             accelerations[3*i+0] += force*dr[0];
                                             accelerations[3*i+1] += force*dr[1];
                                             accelerations[3*i+2] += force*dr[2];

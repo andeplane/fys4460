@@ -62,6 +62,7 @@ void System::create_FCC() {
     double T = unit_converter->temperature_from_SI(settings->temperature);
 
     double ek = 0;
+    bool warning_shown = false;
 
     for(int x = 0; x < settings->nodes_x*settings->unit_cells_x; x++) {
         for(int y = 0; y < settings->nodes_y*settings->unit_cells_y; y++) {
@@ -91,6 +92,11 @@ void System::create_FCC() {
                                 + velocities[3*num_atoms_local+2]*velocities[3*num_atoms_local+2]);
 
                         num_atoms_local++;
+                        if(!warning_shown && num_atoms_local >= 0.6*MAX_PARTICLE_NUM) {
+                            cout << "                 ### WARNING ###" << endl;
+                            cout << "NUMBER OF PARTICLES IS MORE THAN 0.8*MAX_PARTICLE_NUM" << endl << endl;
+                            warning_shown = true;
+                        }
                     }
                 }
             }

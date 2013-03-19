@@ -10,7 +10,7 @@ class UnitConverter;
 
 #include <fstream>
 #include <vector>
-#define MAX_PARTICLE_NUM 100000
+#define MAX_PARTICLE_NUM 1000000
 #define MAX_CELL_NUM 1000
 #define EMPTY -1
 

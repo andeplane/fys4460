@@ -38,7 +38,7 @@ mac {
     QMAKE_CXX = icc
     CONFIG -= app_bundle
     LIBS   +=
-    INCLUDEPATH +=
+    INCLUDEPATH += -Wl,-stack_size,0x10000000
     QMAKE_CXXFLAGS +=
     QMAKE_CXXFLAGS_RELEASE = $$QMAKE_CXXFLAGS
     QMAKE_CXXFLAGS_DEBUG = $$QMAKE_CXXFLAGS

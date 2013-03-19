@@ -397,7 +397,7 @@ void System::calculate_accelerations() {
     /* Reset the potential & forces */
     potential_energy = 0.0;
     pressure_forces = 0;
-    for (i=0; i<num_atoms_local; i++) for (a=0; a<3; a++) accelerations[i][a] = 0.0;
+    for (i=0; i<num_atoms_local; i++) for (a=0; a<3; a++) accelerations[3*i + a] = 0.0;
     for (c=0; c<num_cells_including_ghosts_xyz; c++) head[c] = EMPTY;
 
     for (i=0; i<num_atoms_local+num_atoms_ghost; i++) {
@@ -448,10 +448,10 @@ void System::calculate_accelerations() {
 
                                             for(a=0;a<3;a++) {
                                                 double force = 24*(2.0*dr12_inverse-dr6_inverse)*dr2_inverse*dr[a];
-                                                accelerations[i][a] += force*mass_inverse;
+                                                accelerations[3*i+a] += force*mass_inverse;
 
                                                 if(is_local_atom) {
-                                                    accelerations[j][a] -= force*mass_inverse;
+                                                    accelerations[3*j+a] -= force*mass_inverse;
                                                     pressure_forces += force*dr[a];
                                                 } else pressure_forces += 0.5*force*dr[a];
                                             }
@@ -479,7 +479,7 @@ void System::calculate_accelerations() {
 void System::half_kick() {
     for(n=0;n<num_atoms_local;n++) {
         for(a=0;a<3;a++) {
-            if(!frozen_atom[n]) velocities[3*n+a] += accelerations[n][a]*dt_half;
+            if(!frozen_atom[n]) velocities[3*n+a] += accelerations[3*n+a]*dt_half;
         }
     }
 }
@@ -487,7 +487,7 @@ void System::half_kick() {
 void System::full_kick() {
     for(n=0;n<num_atoms_local;n++) {
         for(a=0;a<3;a++) {
-            if(!frozen_atom[n]) velocities[3*n+a] += accelerations[n][a]*dt;
+            if(!frozen_atom[n]) velocities[3*n+a] += accelerations[3*n+a]*dt;
         }
     }
 }

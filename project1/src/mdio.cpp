@@ -58,9 +58,9 @@ void MDIO::save_state_to_file_binary() {
         tmp_data[6*i + 1] = system->positions[i][1] + system->origo[1];
         tmp_data[6*i + 2] = system->positions[i][2] + system->origo[2];
 
-        tmp_data[6*i + 3] = system->velocities[i][0];
-        tmp_data[6*i + 4] = system->velocities[i][1];
-        tmp_data[6*i + 5] = system->velocities[i][2];
+        tmp_data[6*i + 3] = system->velocities[3*i+0];
+        tmp_data[6*i + 4] = system->velocities[3*i+1];
+        tmp_data[6*i + 5] = system->velocities[3*i+2];
     }
 
     file.write (reinterpret_cast<char*>(&system->num_atoms_local), sizeof(int));
@@ -93,9 +93,9 @@ void MDIO::load_state_from_file_binary() {
         system->positions[i][1] = tmp_data[6*i+1] - system->origo[1];
         system->positions[i][2] = tmp_data[6*i+2] - system->origo[2];
 
-        system->velocities[i][0] = tmp_data[6*i+3];
-        system->velocities[i][1] = tmp_data[6*i+4];
-        system->velocities[i][2] = tmp_data[6*i+5];
+        system->velocities[3*i+0] = tmp_data[6*i+3];
+        system->velocities[3*i+1] = tmp_data[6*i+4];
+        system->velocities[3*i+2] = tmp_data[6*i+5];
     }
     delete tmp_data;
     delete filename;

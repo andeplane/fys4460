@@ -70,8 +70,8 @@ public:
     double positions[MAX_PARTICLE_NUM][3];
     double accelerations[MAX_PARTICLE_NUM][3];
     double mass_inverse, pressure_forces;
-    double velocities[MAX_PARTICLE_NUM][3];
-    double initial_positions[MAX_PARTICLE_NUM][3];
+    double velocities[3*MAX_PARTICLE_NUM];
+    double initial_positions[3*MAX_PARTICLE_NUM];
     unsigned int move_queue[6][MAX_PARTICLE_NUM];
     bool frozen_atom[MAX_PARTICLE_NUM];
     int linked_list[MAX_PARTICLE_NUM];

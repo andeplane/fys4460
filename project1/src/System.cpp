@@ -390,14 +390,12 @@ void System::mpi_copy() {
 void System::calculate_accelerations() {
     mdtimer->start_forces();
 
-    bool is_local_atom;
-    double dr2, dr2_inverse, dr6_inverse, dr12_inverse, force;
+    double dr2;
     double rr_cut = r_cut*r_cut;
 
     /* Reset the potential & forces */
     potential_energy = 0.0;
     pressure_forces = 0;
-    double potential_energy_tmp = 0;
     for (i=0; i<num_atoms_local; i++) for (a=0; a<3; a++) accelerations[3*i+a] = 0.0;
     for (c=0; c<num_cells_including_ghosts_xyz; c++) head[c] = EMPTY;
 
@@ -424,13 +422,13 @@ void System::calculate_accelerations() {
                             cell_index_from_vector(mc1,cell_index_2);
                             if(head[cell_index_2] == EMPTY) continue;
 
-                            i = head[cell_index];
+                            int i = head[cell_index];
 
                             while (i != EMPTY) {
-                                j = head[cell_index_2];
+                                int j = head[cell_index_2];
                                 while (j != EMPTY) {
                                     if(i < j) {
-                                        is_local_atom = j < num_atoms_local;
+                                        bool is_local_atom = j < num_atoms_local;
 
                                         /* Pair vector dr = r[i] - r[j] */
                                         for (dr2=0.0, a=0; a<3; a++) {
@@ -439,16 +437,16 @@ void System::calculate_accelerations() {
                                         }
 
                                         if (dr2<rr_cut) {
-                                            dr2_inverse = 1.0/dr2;
-                                            dr6_inverse = pow(dr2_inverse,3);
-                                            dr12_inverse = pow(dr6_inverse,2);
+                                            double dr2_inverse = 1.0/dr2;
+                                            double dr6_inverse = pow(dr2_inverse,3);
+                                            double dr12_inverse = pow(dr6_inverse,2);
 
-                                            potential_energy_tmp = 4*(1.0/dr12_inverse - 1.0/dr6_inverse);
+                                            double potential_energy_tmp = 4*(1.0/dr12_inverse - 1.0/dr6_inverse);
                                             if(is_local_atom) potential_energy += potential_energy_tmp;
                                             else potential_energy += 0.5*potential_energy_tmp;
 
                                             for(a=0;a<3;a++) {
-                                                force = 24*(2.0*dr12_inverse-dr6_inverse)*dr2_inverse*dr[a];
+                                                double force = 24*(2.0*dr12_inverse-dr6_inverse)*dr2_inverse*dr[a];
                                                 accelerations[3*i+a] += force*mass_inverse;
 
                                                 if(is_local_atom) {

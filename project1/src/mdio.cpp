@@ -85,7 +85,7 @@ void MDIO::load_state_from_file_binary() {
 
     double *tmp_data = new double[6*system->num_atoms_local];
     file.read(reinterpret_cast<char*>(tmp_data),6*system->num_atoms_local*sizeof(double));
-    // file.read(reinterpret_cast<char*>(&system->frozen_atom), system->num_atoms_local*sizeof(bool));
+    file.read(reinterpret_cast<char*>(&system->frozen_atom), system->num_atoms_local*sizeof(bool));
     file.close();
 
     for(unsigned int i=0;i<system->num_atoms_local;i++) {

@@ -89,9 +89,9 @@ void System::create_FCC() {
                         frozen_atom[num_atoms_local] = false;
 
                         num_atoms_local++;
-                        if(!warning_shown && num_atoms_local >= 0.6*MAX_PARTICLE_NUM) {
+                        if(!warning_shown && num_atoms_local >= 0.6*MAX_ATOM_NUM) {
                             cout << "                 ### WARNING ###" << endl;
-                            cout << "NUMBER OF PARTICLES IS MORE THAN 0.8*MAX_PARTICLE_NUM" << endl << endl;
+                            cout << "NUMBER OF PARTICLES IS MORE THAN 0.8*MAX_ATOM_NUM" << endl << endl;
                             warning_shown = true;
                         }
                     }

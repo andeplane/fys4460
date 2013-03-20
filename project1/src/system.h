@@ -11,7 +11,7 @@ class StatisticsSampler;
 
 #include <fstream>
 #include <vector>
-#define MAX_PARTICLE_NUM 1000000
+#define MAX_ATOM_NUM 1000000
 #define MAX_CELL_NUM 1000
 #define EMPTY -1
 
@@ -66,18 +66,18 @@ public:
     unsigned int num_cells_including_ghosts[3];
     double dr[3];
     double shift_vector[6][3];
-    unsigned int move_queue[6][MAX_PARTICLE_NUM];
-    double mpi_send_buffer[3*MAX_PARTICLE_NUM];
-    double mpi_receive_buffer[3*MAX_PARTICLE_NUM];
-    bool atom_moved[MAX_PARTICLE_NUM];
-    __declspec(align(16)) double positions[MAX_PARTICLE_NUM][3];
-    double accelerations[3*MAX_PARTICLE_NUM];
+    unsigned int move_queue[6][MAX_ATOM_NUM];
+    double mpi_send_buffer[3*MAX_ATOM_NUM];
+    double mpi_receive_buffer[3*MAX_ATOM_NUM];
+    bool atom_moved[MAX_ATOM_NUM];
+    __declspec(align(16)) double positions[MAX_ATOM_NUM][3];
+    double accelerations[3*MAX_ATOM_NUM];
     double mass_inverse, pressure_forces;
-    double velocities[3*MAX_PARTICLE_NUM];
-    bool frozen_atom[MAX_PARTICLE_NUM];
-    int linked_list[MAX_PARTICLE_NUM];
+    double velocities[3*MAX_ATOM_NUM];
+    bool frozen_atom[MAX_ATOM_NUM];
+    int linked_list[MAX_ATOM_NUM];
     bool is_ghost_cell[MAX_CELL_NUM];
-    double initial_positions[3*MAX_PARTICLE_NUM];
+    double initial_positions[3*MAX_ATOM_NUM];
 
 
     System();

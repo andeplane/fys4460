@@ -62,5 +62,16 @@ QMAKE_CXXFLAGS += $$system(mpicxx --showme:compile) -DMPICH_IGNORE_CXX_SEEK
 QMAKE_CXXFLAGS_RELEASE = $$QMAKE_CXXFLAGS
 QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE += -O3
-QMAKE_CXXFLAGS_RELEASE +=
-QMAKE_LFLAGS += 
+
+QMAKE_LFLAGS += -ipo -no-prec-div -falign-functions=16 -xCORE-AVX-I
+QMAKE_CXXFLAGS_RELEASE += -ipo -no-prec-div -falign-functions=16 -xCORE-AVX-I
+
+#QMAKE_CXXFLAGS_RELEASE += -ipo -prof-use -no-prec-div -falign-functions=16 -xCORE-AVX-I
+#QMAKE_CXXFLAGS_RELEASE += -ipo -prof-gen
+#QMAKE_LFLAGS += -falign-functions=16 -xCORE-AVX-I -ipo -prof-gen
+
+QMAKE_LFLAGS -= -lm
+QMAKE_LFLAGS -= -O2
+QMAKE_LFLAGS += -O3
+QMAKE_CFLAGS_RELEASE -= -fPIE
+QMAKE_CXXFLAGS_RELEASE -= -fPIE

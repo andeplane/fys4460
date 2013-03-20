@@ -445,14 +445,19 @@ void System::calculate_accelerations() {
                                             dr6_inverse = dr2_inverse*dr2_inverse*dr2_inverse;
                                             dr12_inverse = dr6_inverse*dr6_inverse;
 
+                                            double force = (2*dr12_inverse-dr6_inverse)*dr2_inverse*mass_inverse_24;
+
                                             if(will_sample) {
                                                 double potential_energy_tmp = 4*(dr12_inverse - dr6_inverse);
-                                                if(is_local_atom) potential_energy += potential_energy_tmp;
-                                                else potential_energy += 0.5*potential_energy_tmp;
+                                                if(is_local_atom) {
+                                                    potential_energy += potential_energy_tmp;
+                                                    pressure_forces += force*dr2;
+                                                } else {
+                                                    pressure_forces += 0.5*force*dr2;
+                                                    potential_energy += 0.5*potential_energy_tmp;
+                                                }
                                             }
 
-
-                                            double force = (2*dr12_inverse-dr6_inverse)*dr2_inverse*mass_inverse_24;
                                             accelerations[3*i+0] += force*dr[0];
                                             accelerations[3*i+1] += force*dr[1];
                                             accelerations[3*i+2] += force*dr[2];
@@ -461,8 +466,7 @@ void System::calculate_accelerations() {
                                                 accelerations[3*j+0] -= force*dr[0];
                                                 accelerations[3*j+1] -= force*dr[1];
                                                 accelerations[3*j+2] -= force*dr[2];
-                                                pressure_forces += force*dr2;
-                                            } else pressure_forces += 0.5*force*dr2;
+                                            }
 
 
                                         }

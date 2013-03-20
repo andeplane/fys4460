@@ -40,7 +40,6 @@ int main(int args, char *argv[]) {
 
     for(int i=0;i<settings->timesteps;i++) {
         system->step();
-        // sampler->sample();
         if(settings->thermostat_enabled) thermostat.apply(system->sampler,system,settings->temperature);
 
         system->mdio->save_state_to_movie_file();

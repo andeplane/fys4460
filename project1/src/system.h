@@ -66,6 +66,7 @@ public:
     unsigned int num_cells_including_ghosts[3];
     double dr[3];
     double shift_vector[6][3];
+    unsigned int move_queue[6][MAX_PARTICLE_NUM];
     double mpi_send_buffer[3*MAX_PARTICLE_NUM];
     double mpi_receive_buffer[3*MAX_PARTICLE_NUM];
     bool atom_moved[MAX_PARTICLE_NUM];
@@ -73,11 +74,10 @@ public:
     double accelerations[3*MAX_PARTICLE_NUM];
     double mass_inverse, pressure_forces;
     double velocities[3*MAX_PARTICLE_NUM];
-    double initial_positions[3*MAX_PARTICLE_NUM];
-    unsigned int move_queue[6][MAX_PARTICLE_NUM];
     bool frozen_atom[MAX_PARTICLE_NUM];
     int linked_list[MAX_PARTICLE_NUM];
     bool is_ghost_cell[MAX_CELL_NUM];
+    double initial_positions[3*MAX_PARTICLE_NUM];
 
 
     System();

@@ -135,8 +135,7 @@ void System::init_parameters() {
     num_cells_including_ghosts_yz = num_cells_including_ghosts[1]*num_cells_including_ghosts[2];
     num_cells_including_ghosts_xyz = num_cells_including_ghosts_yz*num_cells_including_ghosts[0];
     head = new int[num_cells_including_ghosts_xyz];
-    // cout << num_cells_including_ghosts_xyz << endl;
-    // is_ghost_cell = new bool[num_cells_including_ghosts_xyz];
+
     for(int cx=0;cx<num_cells_local[0]+2;cx++) {
         for(int cy=0;cy<num_cells_local[1]+2;cy++) {
             for(int cz=0;cz<num_cells_local[2]+2;cz++) {
@@ -436,7 +435,6 @@ void System::calculate_accelerations() {
                                     if(i < j) {
                                         bool is_local_atom = j < num_atoms_local;
                                         /* Pair vector dr = r[i] - r[j] */
-                                        dr2 = 0;
                                         dr[0] = positions[i][0]-positions[j][0];
                                         dr[1] = positions[i][1]-positions[j][1];
                                         dr[2] = positions[i][2]-positions[j][2];
@@ -458,7 +456,6 @@ void System::calculate_accelerations() {
                                             accelerations[3*i+0] += force*dr[0];
                                             accelerations[3*i+1] += force*dr[1];
                                             accelerations[3*i+2] += force*dr[2];
-
 
                                             if(is_local_atom) {
                                                 accelerations[3*j+0] -= force*dr[0];

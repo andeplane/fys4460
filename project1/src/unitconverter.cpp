@@ -6,6 +6,7 @@ UnitConverter::UnitConverter()
 {
     m0 = 1.66053886e-27;  // SI
     L0 = 3.405e-10;       // SI
+    L0_angstrom = 3.405;
     E0ev = 1.0318e-2;     // eV
     E0 = 1.65088e-21;     // SI
     kb = 1.3806503e-23;   // SI

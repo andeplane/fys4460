@@ -6,6 +6,7 @@ class UnitConverter
 public:
     double m0;
     double L0;
+    double L0_angstrom;
     double E0;
     double E0ev;
     double kb;

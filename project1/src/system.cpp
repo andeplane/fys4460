@@ -76,9 +76,9 @@ void System::create_FCC() {
             for(int z = 0; z < settings->nodes_z*settings->unit_cells_z; z++) {
                 for(int k = 0; k < 4; k++) {
                     // Set positions and type
-                    r[0] = (x+xCell[k]) * settings->FCC_b - origo[0];
-                    r[1] = (y+yCell[k]) * settings->FCC_b - origo[1];
-                    r[2] = (z+zCell[k]) * settings->FCC_b - origo[2];
+                    r[0] = (x+xCell[k]) * settings->FCC_b/unit_converter->L0_angstrom - origo[0];
+                    r[1] = (y+yCell[k]) * settings->FCC_b/unit_converter->L0_angstrom - origo[1];
+                    r[2] = (z+zCell[k]) * settings->FCC_b/unit_converter->L0_angstrom - origo[2];
                     bool is_mine = true;
                     for(i=0;i<3;i++) {
                         if(!(r[i] >= 0 && r[i] < node_length[i])) is_mine = false;
@@ -123,9 +123,9 @@ void System::init_parameters() {
     node_index[2] = myid%settings->nodes_z;
 
     // Size of this node
-    node_length[0] = settings->unit_cells_x*settings->FCC_b;
-    node_length[1] = settings->unit_cells_y*settings->FCC_b;
-    node_length[2] = settings->unit_cells_z*settings->FCC_b;
+    node_length[0] = settings->unit_cells_x*settings->FCC_b/unit_converter->L0_angstrom;
+    node_length[1] = settings->unit_cells_y*settings->FCC_b/unit_converter->L0_angstrom;
+    node_length[2] = settings->unit_cells_z*settings->FCC_b/unit_converter->L0_angstrom;
 
     for(a=0;a<3;a++) {
         system_length[a] = node_length[a]*num_processors[a];

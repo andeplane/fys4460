@@ -33,7 +33,6 @@ int main(int args, char *argv[]) {
 	double r2;
 	int frozen_atoms = 0;
 	for(int cpu=0;cpu<cpus;cpu++) { 
-		
 		sprintf(filename,"release/state_files/state%04d.bin",cpu);
 		ifstream state_file(filename,ios::in | ios::binary);
 
@@ -60,6 +59,7 @@ int main(int args, char *argv[]) {
 		save_state_file.write(reinterpret_cast<char*>(&data),6*num_particles*sizeof(double));
 		save_state_file.write(reinterpret_cast<char*>(&is_frozen),num_particles*sizeof(bool));
 		save_state_file.close();
+		cout << "Created cylinder in cpu " << cpu << endl;
 	}
 
 	cout << "Cylinder created with " << frozen_atoms << " frozen atoms." << endl;

@@ -51,6 +51,7 @@ void System::setup(int myid_, Settings *settings_) {
     if(myid==0) cout << "Atoms: " << num_atoms_global << endl;
     if(myid==0) cout << "Processors: " << num_nodes << " (" << settings->nodes_x << "," << settings->nodes_y << "," << settings->nodes_z << ")" << endl;
     if(myid==0) cout << "Atoms/processor: " << num_atoms_global/num_nodes << endl;
+
     for(i=0;i<num_atoms_local;i++) {
         if(frozen_atom[i]) {
             velocities[3*i+0] = 0;
@@ -58,6 +59,7 @@ void System::setup(int myid_, Settings *settings_) {
             velocities[3*i+2] = 0;
         }
     }
+
     mdtimer->end_system_initialize();
 }
 
@@ -443,7 +445,11 @@ void System::calculate_accelerations() {
                             while (i != EMPTY) {
                                 j = head[cell_index_2];
                                 while (j != EMPTY) {
+#ifdef MANY_FROZEN_ATOMS
+                                    if(i < j && !(frozen_atom[i] && frozen_atom[j])) {
+#else
                                     if(i < j) {
+#endif
                                         bool is_local_atom = j < num_atoms_local;
                                         /* Pair vector dr = r[i] - r[j] */
                                         dr[0] = positions[i][0]-positions[j][0];

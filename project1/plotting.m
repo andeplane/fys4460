@@ -1,44 +1,36 @@
 function plotting
 clear all;
 close all;
+format long;
 
-energy = dlmread('build/energy.dat');
+energy = dlmread('release/energy.txt');
+pressure = dlmread('release/pressure.txt');
 
-temperature = dlmread('build/temperature.dat');
-pressure = dlmread('build/pressure.dat');
-diffusion = dlmread('build/diffusion.dat');
-
-t = energy(:,1);
-Ek = energy(:,2);
-Ep = energy(:,3);
-E = energy(:,4);
+time = energy(:,1);
+kinetic_energy = energy(:,2);
+potential_energy = energy(:,3);
+total_energy = energy(:,4);
+temperature = energy(:,5);
 
 figure(1)
 subplot(4,1,1);
-plot(t,Ek,'r');
+plot(time,kinetic_energy,'r');
 hold on
-plot(t,Ep,'g');
-plot(t,E,'b');
+plot(time,potential_energy,'g');
+plot(time,total_energy,'b');
 legend('Kinetic energy','Potential energy','Total energy');
 xlabel('Time')
 ylabel('Energy')
 
 subplot(4,1,2);
-plot(t,temperature(:,2));
+plot(time,temperature);
 legend('Temperature');
 xlabel('Time')
 ylabel('Temperature')
 
 subplot(4,1,3);
-plot(t,pressure(:,2));
+plot(time,pressure(:,2));
 legend('Pressure');
 xlabel('Time')
 ylabel('Pressure')
-
-subplot(4,1,4);
-plot(diffusion(:,1),diffusion(:,2));
-legend('Diffusion constant');
-xlabel('Time')
-ylabel('Diffusion constant')
-    
 end

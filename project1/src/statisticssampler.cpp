@@ -77,7 +77,7 @@ void StatisticsSampler::sample() {
         double potential_energy_per_atom = potential_energy/system->num_atoms_global;
         double kinetic_energy_per_atom = kinetic_energy/system->num_atoms_global;
 
-        fprintf(system->mdio->energy_file, "%.15f %.15f %.15f %.15f\n",t_in_pico_seconds,
+        fprintf(system->mdio->energy_file, "%.15f %.15f %.15f %.15f %.15f\n",t_in_pico_seconds,
                 system->unit_converter->energy_to_ev(kinetic_energy_per_atom),
                 system->unit_converter->energy_to_ev(potential_energy_per_atom),
                 system->unit_converter->energy_to_ev(kinetic_energy_per_atom+potential_energy_per_atom),

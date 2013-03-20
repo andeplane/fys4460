@@ -14,7 +14,7 @@ UnitConverter::UnitConverter()
     t0 = L0*sqrt(m0/E0);
     F0 = E0/L0;
     T0 = E0/kb;
-    P0 = m0/(t0*L0);
+    P0 = m0/(t0*t0*L0);
     v0 = L0/t0;
     visc0 = P0*t0;
     diff0 = L0*L0/t0;

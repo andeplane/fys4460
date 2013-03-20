@@ -330,10 +330,6 @@ void System::mpi_move() {
         }
     }
 
-    if(ipt != num_atoms_local) {
-        cout << "Now we have " << ipt << " particles." << endl;
-        exit(0);
-    }
     /* Update the compressed # of resident atoms */
     num_atoms_local = ipt;
 }

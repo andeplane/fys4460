@@ -70,7 +70,7 @@ public:
     double mpi_send_buffer[3*MAX_ATOM_NUM];
     double mpi_receive_buffer[3*MAX_ATOM_NUM];
     bool atom_moved[MAX_ATOM_NUM];
-    __declspec(align(16)) double positions[MAX_ATOM_NUM][3];
+    double positions[MAX_ATOM_NUM][3];
     double accelerations[3*MAX_ATOM_NUM];
     double mass_inverse, pressure_forces;
     double velocities[3*MAX_ATOM_NUM];

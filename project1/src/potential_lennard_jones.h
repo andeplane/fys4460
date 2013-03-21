@@ -11,7 +11,7 @@ void System::calculate_accelerations() {
     /* Reset the potential & forces */
     potential_energy = 0.0;
     pressure_forces = 0;
-    for (i=0; i<num_atoms_local; i++) for (a=0; a<3; a++) accelerations[3*i + a] = 0.0;
+    memset(accelerations,0,num_atoms_local*3*sizeof(double));
     for (c=0; c<num_cells_including_ghosts_xyz; c++) head[c] = EMPTY;
 
     for (i=0; i<num_atoms_local+num_atoms_ghost; i++) {
@@ -24,7 +24,7 @@ void System::calculate_accelerations() {
         head[cell_index] = i;
     }
 
-    double dr2_inverse, dr6_inverse, dr12_inverse;
+    double dr2_inverse, dr6_inverse;
     bool will_sample = settings->statistics_interval && steps % settings->statistics_interval == 0;
     double mass_inverse_24 = mass_inverse*24;
 
@@ -60,12 +60,11 @@ void System::calculate_accelerations() {
                                         if (dr2<rr_cut) {
                                             dr2_inverse = 1.0/dr2;
                                             dr6_inverse = dr2_inverse*dr2_inverse*dr2_inverse;
-                                            dr12_inverse = dr6_inverse*dr6_inverse;
 
-                                            double force = (2*dr12_inverse-dr6_inverse)*dr2_inverse*mass_inverse_24;
+                                            double force = (2*dr6_inverse-1)*dr6_inverse*dr2_inverse*mass_inverse_24;
 
                                             if(will_sample) {
-                                                double potential_energy_tmp = 4*(dr12_inverse - dr6_inverse);
+                                                double potential_energy_tmp = 4*dr6_inverse*(dr6_inverse - 1);
                                                 if(is_local_atom) {
                                                     potential_energy += potential_energy_tmp;
                                                     pressure_forces += force*dr2;

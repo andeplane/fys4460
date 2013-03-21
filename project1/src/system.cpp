@@ -73,7 +73,6 @@ void System::create_FCC() {
     double T = unit_converter->temperature_from_SI(settings->temperature);
 
     bool warning_shown = false;
-    int n = 0;
     for(int x = 0; x < settings->nodes_x*settings->unit_cells_x; x++) {
         for(int y = 0; y < settings->nodes_y*settings->unit_cells_y; y++) {
             for(int z = 0; z < settings->nodes_z*settings->unit_cells_z; z++) {
@@ -296,7 +295,9 @@ void System::mpi_move() {
                 MPI_Send(mpi_send_buffer,6*num_send,MPI_DOUBLE,node_id,120,MPI_COMM_WORLD);
             }
             /* Single layer: Exchange information with myself */
-            else for (i=0; i<6*num_receive; i++) mpi_receive_buffer[i] = mpi_send_buffer[i];
+            else memcpy(mpi_receive_buffer,mpi_send_buffer,6*num_receive*sizeof(double));
+            //else for (i=0; i<6*num_receive; i++) mpi_receive_buffer[i] = mpi_send_buffer[i];
+
 
             /* Message storing */
             for (i=0; i<num_receive; i++) {
@@ -340,7 +341,6 @@ void System::mpi_move() {
 
 void System::mpi_copy() {
     MPI_Status status;
-    Atom *atom, *atom1;
     int node_id, num_send, num_receive;
     int new_ghost_atoms = 0;
     short higher, local_node_id;
@@ -386,7 +386,8 @@ void System::mpi_copy() {
                 MPI_Recv(mpi_receive_buffer,3*num_receive,MPI_DOUBLE,MPI_ANY_SOURCE,20,MPI_COMM_WORLD,&status);
                 MPI_Send(mpi_send_buffer,3*num_send,MPI_DOUBLE,node_id,20,MPI_COMM_WORLD);
             }
-            else for (i=0; i<3*num_receive; i++) mpi_receive_buffer[i] = mpi_send_buffer[i];
+            else memcpy(mpi_receive_buffer,mpi_send_buffer,3*num_receive*sizeof(double));
+            // else for (i=0; i<3*num_receive; i++) mpi_receive_buffer[i] = mpi_send_buffer[i];
 
             for (i=0; i<num_receive; i++) {
                 positions[ (num_atoms_local+new_ghost_atoms+i) ][0] = mpi_receive_buffer[3*i+0];

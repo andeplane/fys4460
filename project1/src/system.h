@@ -79,7 +79,6 @@ public:
     bool is_ghost_cell[MAX_CELL_NUM];
     double initial_positions[3*MAX_ATOM_NUM];
 
-
     System();
     void setup(int myid_, Settings *settings_);
     void step();

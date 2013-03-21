@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
-#define MAX_ATOM_NUM 100000
+#define MAX_ATOM_NUM 1000000
 char atom_type_string[][5] = {"Ar ", "H "};
 
 using namespace std;

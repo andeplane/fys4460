@@ -31,7 +31,8 @@ HEADERS += \
     mdio.h \
     atom.h \
     mdtimer.h \
-    atom_types.h
+    atom_types.h \
+    potential_lennard_jones.h
 
 mac {
     QMAKE_CXX = icc

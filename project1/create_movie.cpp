@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
+#define MAX_ATOM_NUM 100000
+char atom_type_string[][5] = {"Ar ", "H "};
 
 using namespace std;
 
@@ -12,7 +14,10 @@ int main(int args, char *argv[]) {
 	}
 	int cpus = atoi(argv[1]);
 	int timesteps = atoi(argv[2]);
-	double *positions = new double[3*1000000];
+	double *positions = new double[3*MAX_ATOM_NUM];
+	unsigned long *atom_type = new unsigned long[MAX_ATOM_NUM];
+	
+	
 	ofstream file ("movie.xyz", ios::out);
 	
 	ifstream **movie_files = new ifstream*[cpus];
@@ -29,6 +34,7 @@ int main(int args, char *argv[]) {
 			unsigned long N;
 			movie_files[cpu]->read(reinterpret_cast<char*>(&N),sizeof(unsigned long));
 			movie_files[cpu]->read(reinterpret_cast<char*>(&positions[3*num_particles]),3*N*sizeof(double));
+			movie_files[cpu]->read(reinterpret_cast<char*>(&atom_type[num_particles]),N*sizeof(unsigned long));
 			num_particles += N;
 		}
 		
@@ -36,8 +42,8 @@ int main(int args, char *argv[]) {
 		file << num_particles << endl;
 		file << "sup" << endl;
 		for(int n=0;n<num_particles;n++) {
-        	// We return height - r(1) because system is inverted
-        	file << "H " << positions[3*n+0] << " " << positions[3*n+1] << " " << positions[3*n+2] << endl;
+        	// We return height - r(1) because system is inverted        	
+        	file << atom_type_string[atom_type[n]] << positions[3*n+0] << " " << positions[3*n+1] << " " << positions[3*n+2] << endl;
 	    }
 
 	    cout << "Wrote timestep " << timestep << endl;

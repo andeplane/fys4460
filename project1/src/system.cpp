@@ -11,6 +11,7 @@
 #include <random.h>
 #include <atom.h>
 #include <statisticssampler.h>
+#include <atom_types.h>
 
 using namespace std;
 System::System() {
@@ -53,7 +54,7 @@ void System::setup(int myid_, Settings *settings_) {
     if(myid==0) cout << "Atoms/processor: " << num_atoms_global/num_nodes << endl;
 
     for(i=0;i<num_atoms_local;i++) {
-        if(frozen_atom[i]) {
+        if(atom_type[i] == FROZEN) {
             velocities[3*i+0] = 0;
             velocities[3*i+1] = 0;
             velocities[3*i+2] = 0;
@@ -72,12 +73,13 @@ void System::create_FCC() {
     double T = unit_converter->temperature_from_SI(settings->temperature);
 
     bool warning_shown = false;
-
+    int n = 0;
     for(int x = 0; x < settings->nodes_x*settings->unit_cells_x; x++) {
         for(int y = 0; y < settings->nodes_y*settings->unit_cells_y; y++) {
             for(int z = 0; z < settings->nodes_z*settings->unit_cells_z; z++) {
                 for(int k = 0; k < 4; k++) {
                     // Set positions and type
+
                     r[0] = (x+xCell[k]) * settings->FCC_b/unit_converter->L0_angstrom - origo[0];
                     r[1] = (y+yCell[k]) * settings->FCC_b/unit_converter->L0_angstrom - origo[1];
                     r[2] = (z+zCell[k]) * settings->FCC_b/unit_converter->L0_angstrom - origo[2];
@@ -87,6 +89,7 @@ void System::create_FCC() {
                     }
 
                     if(is_mine) {
+                        // if(n++>10) continue;
                         for(i=0;i<3;i++) {
                             positions[num_atoms_local][i] = r[i];
                             initial_positions[3*num_atoms_local+i] = r[i];
@@ -94,7 +97,7 @@ void System::create_FCC() {
                         velocities[3*num_atoms_local+0] = rnd->nextGauss()*sqrt(T*mass_inverse);
                         velocities[3*num_atoms_local+1] = rnd->nextGauss()*sqrt(T*mass_inverse);
                         velocities[3*num_atoms_local+2] = rnd->nextGauss()*sqrt(T*mass_inverse);
-                        frozen_atom[num_atoms_local] = false;
+                        atom_type[num_atoms_local] = ARGON;
 
                         num_atoms_local++;
                         if(!warning_shown && num_atoms_local >= 0.6*MAX_ATOM_NUM) {
@@ -131,13 +134,12 @@ void System::init_parameters() {
 
     for(a=0;a<3;a++) {
         system_length[a] = node_length[a]*num_processors[a];
-        origo[a] = (float)node_index[a] * node_length[a];
+        origo[a] = (double)node_index[a] * node_length[a];
         num_cells_local[a] = node_length[a]/r_cut;
         num_cells_including_ghosts[a] = num_cells_local[a]+2;
 
         cell_length[a] = node_length[a]/num_cells_local[a];
     }
-
     volume = system_length[0]*system_length[1]*system_length[2];
 
     num_cells_including_ghosts_yz = num_cells_including_ghosts[1]*num_cells_including_ghosts[2];
@@ -164,23 +166,23 @@ void System::set_topology() {
     ----------------------------------------------------------------------*/
 
     /* Integer vectors to specify the six neighbor nodes */
-    int iv[6][3] = {
+    int integer_vector[6][3] = {
         {-1,0,0}, {1,0,0}, {0,-1,0}, {0,1,0}, {0,0,-1}, {0,0,1}
     };
 
     int k1[3];
 
     /* Set up neighbor tables, nn & sv */
-    for (int ku=0; ku<6; ku++) {
+    for (int n=0; n<6; n++) {
         /* Vector index of neighbor ku */
         for (a=0; a<3; a++) {
-            k1[a] = (node_index[a]+iv[ku][a]+num_processors[a])%num_processors[a];
+            k1[a] = (node_index[a]+integer_vector[n][a]+num_processors[a])%num_processors[a];
         }
 
         /* Scalar neighbor ID, nn */
-        neighbor_nodes[ku] = k1[0]*num_processors[1]*num_processors[2]+k1[1]*num_processors[2]+k1[2];
+        neighbor_nodes[n] = k1[0]*num_processors[1]*num_processors[2]+k1[1]*num_processors[2]+k1[2];
         /* Shift vector, sv */
-        for (a=0; a<3; a++) shift_vector[ku][a] = node_length[a]*iv[ku][a];
+        for (a=0; a<3; a++) shift_vector[n][a] = node_length[a]*integer_vector[n][a];
     }
 
 
@@ -298,7 +300,7 @@ void System::mpi_move() {
 
             /* Message storing */
             for (i=0; i<num_receive; i++) {
-                frozen_atom[num_atoms_local+new_atoms+i] = false;
+                atom_type[num_atoms_local+new_atoms+i] = ARGON;
                 atom_moved[num_atoms_local+new_atoms+i] = false;
                 positions [(num_atoms_local+new_atoms+i)][0] = mpi_receive_buffer[6*i   + 0];
                 positions [(num_atoms_local+new_atoms+i)][1] = mpi_receive_buffer[6*i   + 1];
@@ -326,7 +328,7 @@ void System::mpi_move() {
                 positions [ipt][a] = positions [i][a];
                 velocities[3*ipt+a] = velocities[3*i+a];
             }
-            frozen_atom[ipt] = frozen_atom[i];
+            atom_type[ipt] = atom_type[i];
 
             ipt++;
         }
@@ -446,7 +448,7 @@ void System::calculate_accelerations() {
                                 j = head[cell_index_2];
                                 while (j != EMPTY) {
 #ifdef MANY_FROZEN_ATOMS
-                                    if(i < j && !(frozen_atom[i] && frozen_atom[j])) {
+                                    if(i < j && !(atom_type[i]==FROZEN && atom_type[j]==FROZEN)) {
 #else
                                     if(i < j) {
 #endif
@@ -511,7 +513,7 @@ void System::calculate_accelerations() {
 void System::half_kick() {
     for(n=0;n<num_atoms_local;n++) {
         for(n=0;n<num_atoms_local;n++) {
-            if(!frozen_atom[n]) {
+            if(atom_type[n] != FROZEN) {
                 velocities[3*n+0] += accelerations[3*n+0]*dt_half;
                 velocities[3*n+1] += accelerations[3*n+1]*dt_half;
                 velocities[3*n+2] += accelerations[3*n+2]*dt_half;
@@ -522,7 +524,7 @@ void System::half_kick() {
 
 void System::full_kick() {
     for(n=0;n<num_atoms_local;n++) {
-        if(!frozen_atom[n]) {
+        if(atom_type[n] != FROZEN) {
             velocities[3*n+0] += accelerations[3*n+0]*dt;
             velocities[3*n+1] += accelerations[3*n+1]*dt;
             velocities[3*n+2] += accelerations[3*n+2]*dt;
@@ -534,7 +536,7 @@ void System::move() {
     mdtimer->start_moving();
 
     for(n=0;n<num_atoms_local;n++) {
-        if(!frozen_atom[n]) {
+        if(atom_type[n] != FROZEN) {
             positions[n][0] += velocities[3*n+0]*dt;
             positions[n][1] += velocities[3*n+1]*dt;
             positions[n][2] += velocities[3*n+2]*dt;
@@ -549,9 +551,9 @@ void System::step() {
     steps++;
     move();
     mpi_move();
-    mpi_copy();
-    calculate_accelerations();
-    full_kick();
+     mpi_copy();
+     calculate_accelerations();
+     full_kick();
     t += dt;
     if(settings->statistics_interval && steps % settings->statistics_interval == 0) sampler->sample();
 }

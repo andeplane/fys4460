@@ -30,7 +30,8 @@ HEADERS += \
     settings.h \
     mdio.h \
     atom.h \
-    mdtimer.h
+    mdtimer.h \
+    atom_types.h
 
 mac {
     QMAKE_CXX = icc

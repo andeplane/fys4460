@@ -38,8 +38,8 @@ void System::calculate_accelerations() {
                 for (mc1[0]=mc[0]-1; mc1[0]<=mc[0]+1; mc1[0]++) {
                     for (mc1[1]=mc[1]-1; mc1[1]<=mc[1]+1; mc1[1]++) {
                         for (mc1[2]=mc[2]-1; mc1[2]<=mc[2]+1; mc1[2]++) {
-                            cell_index_from_vector(mc1,cell_index_2); // It is faster to use this function here by unknown reasons. The first cell_index is faster the other way.
-                            // if(head[cell_index_2] == EMPTY) continue;
+                            cell_index_2 = mc1[0]*num_cells_including_ghosts_yz+mc1[1]*num_cells_including_ghosts[2]+mc1[2];
+                            if(head[cell_index_2] == EMPTY) continue;
                             i = head[cell_index];
 
                             while (i != EMPTY) {
@@ -50,7 +50,6 @@ void System::calculate_accelerations() {
 #else
                                     if(i < j) {
 #endif
-                                        bool is_local_atom = j < num_atoms_local;
                                         /* Pair vector dr = r[i] - r[j] */
                                         dr[0] = positions[i][0]-positions[j][0];
                                         dr[1] = positions[i][1]-positions[j][1];
@@ -58,6 +57,7 @@ void System::calculate_accelerations() {
                                         dr2 = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
 
                                         if (dr2<rr_cut) {
+                                            bool is_local_atom = j < num_atoms_local;
                                             dr2_inverse = 1.0/dr2;
                                             dr6_inverse = dr2_inverse*dr2_inverse*dr2_inverse;
 

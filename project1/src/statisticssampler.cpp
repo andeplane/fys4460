@@ -23,7 +23,7 @@ void StatisticsSampler::sample_kinetic_energy() {
     double argon_mass = 39.948;
     double kinetic_energy_global = 0;
 
-    for(unsigned int i=0;i<system->num_atoms_local;i++) {
+    for(unsigned int i=system->num_atoms_frozen;i<system->num_atoms_local;i++) {
         kinetic_energy += 0.5*argon_mass*(system->velocities[3*i+0]*system->velocities[3*i+0] + system->velocities[3*i+1]*system->velocities[3*i+1] + system->velocities[3*i+2]*system->velocities[3*i+2]);
     }
     MPI_Allreduce(&kinetic_energy, &kinetic_energy_global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -44,7 +44,7 @@ void StatisticsSampler::sample_potential_energy() {
 void StatisticsSampler::sample_temperature() {
     if(system->steps == temperature_sampled_at) return;
     sample_kinetic_energy();
-    double kinetic_energy_per_atom = kinetic_energy / system->num_atoms_global;
+    double kinetic_energy_per_atom = kinetic_energy / system->num_atoms_free_global;
     temperature = 2.0/3*kinetic_energy_per_atom;
 
     temperature_sampled_at = system->steps;
@@ -59,7 +59,7 @@ void StatisticsSampler::sample_pressure() {
 
     if(system->myid == 0) {
         pressure /= 3*system->volume;
-        pressure += system->num_atoms_global/system->volume*temperature;
+        pressure += system->num_atoms_free_global/system->volume*temperature;
     }
 
     pressure_sampled_at = system->steps;
@@ -74,8 +74,8 @@ void StatisticsSampler::sample() {
     sample_pressure();
 
     if(system->myid == 0) {
-        double potential_energy_per_atom = potential_energy/system->num_atoms_global;
-        double kinetic_energy_per_atom = kinetic_energy/system->num_atoms_global;
+        double potential_energy_per_atom = potential_energy/system->num_atoms_free_global;
+        double kinetic_energy_per_atom = kinetic_energy/system->num_atoms_free_global;
 
         fprintf(system->mdio->energy_file, "%.15f %.15f %.15f %.15f %.15f\n",t_in_pico_seconds,
                 system->unit_converter->energy_to_ev(kinetic_energy_per_atom),

@@ -60,8 +60,8 @@ int main(int args, char *argv[]) {
              << "      Disk IO           : " << system->mdtimer->io << " s ( " << 100*system->mdtimer->fraction_io() << "%)" <<  endl
              << "      MPI communication : " << system->mdtimer->mpi << " s ( " << 100*system->mdtimer->fraction_mpi() << "%)" <<  endl;
         cout << endl << settings->timesteps / total_time << " timesteps / second. " << endl;
-        cout << system->num_atoms_global*settings->timesteps / (1000*total_time) << "k atom-timesteps / second. " << endl;
-        cout << system->num_atoms_global*settings->timesteps / (1000*total_time*numprocs) << "k atom-timesteps / second (per node). " << endl;
+        cout << system->num_atoms_free_global*settings->timesteps / (1000*total_time) << "k atom-timesteps / second. " << endl;
+        cout << system->num_atoms_free_global*settings->timesteps / (1000*total_time*numprocs) << "k atom-timesteps / second (per node). " << endl;
     }
 
     MPI_Finalize();

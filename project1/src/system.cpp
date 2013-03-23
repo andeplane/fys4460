@@ -27,7 +27,8 @@ void System::setup(int myid_, Settings *settings_) {
     myid = myid_;
     settings = settings_;
     num_atoms_local = 0;
-    num_atoms_global = 0;
+    num_atoms_free_global = 0;
+    num_atoms_all_global = 0;
     num_atoms_ghost = 0;
     num_nodes = settings->nodes_x*settings->nodes_y*settings->nodes_z;
 
@@ -42,20 +43,30 @@ void System::setup(int myid_, Settings *settings_) {
     if(settings->load_state) mdio->load_state_from_file_binary();
     else create_FCC();
 
-    MPI_Allreduce(&num_atoms_local,&num_atoms_global,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD);
+    rearrange_frozen_atoms();
+
+    MPI_Allreduce(&num_atoms_local,&num_atoms_all_global,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Allreduce(&num_atoms_free,&num_atoms_free_global,1,MPI_UNSIGNED_LONG,MPI_SUM,MPI_COMM_WORLD);
 
     mpi_copy();
     calculate_accelerations();
     half_kick();
 
     if(myid==0) cout << "System size: " << unit_converter->length_to_SI(system_length[0])*1e10 << " Å " << unit_converter->length_to_SI(system_length[1])*1e10 << " Å " << unit_converter->length_to_SI(system_length[2])*1e10 << " Å" << endl;
-    if(myid==0) cout << "Atoms: " << num_atoms_global << endl;
+    if(myid==0) cout << "Atoms: " << num_atoms_all_global << endl;
+    if(myid==0) cout << "Free atoms: " << num_atoms_free_global << endl;
     if(myid==0) cout << "Processors: " << num_nodes << " (" << settings->nodes_x << "," << settings->nodes_y << "," << settings->nodes_z << ")" << endl;
-    if(myid==0) cout << "Atoms/processor: " << num_atoms_global/num_nodes << endl;
+    if(myid==0) cout << "Free atoms/processor: " << num_atoms_free_global/num_nodes << endl;
+
+
+
+    mdtimer->end_system_initialize();
+}
+
+void System::rearrange_frozen_atoms() {
     double positions_copy[num_atoms_local][3];
     double velocities_copy[3*num_atoms_local];
     unsigned long atom_type_copy[num_atoms_local];
-
 
     for(i=0;i<num_atoms_local;i++) {
         positions_copy[i][0] = positions[i][0];
@@ -99,8 +110,6 @@ void System::setup(int myid_, Settings *settings_) {
 
         }
     }
-
-    mdtimer->end_system_initialize();
 }
 
 void System::create_FCC() {
@@ -182,7 +191,8 @@ void System::init_parameters() {
 
     num_cells_including_ghosts_yz = num_cells_including_ghosts[1]*num_cells_including_ghosts[2];
     num_cells_including_ghosts_xyz = num_cells_including_ghosts_yz*num_cells_including_ghosts[0];
-    head = new int[num_cells_including_ghosts_xyz];
+    head_all_atoms = new int[num_cells_including_ghosts_xyz];
+    head_free_atoms = new int[num_cells_including_ghosts_xyz];
 
     for(int cx=0;cx<num_cells_local[0]+2;cx++) {
         for(int cy=0;cy<num_cells_local[1]+2;cy++) {
@@ -448,36 +458,28 @@ void System::mpi_copy() {
 #include <potential_lennard_jones.h>
 
 void System::half_kick() {
-    for(n=0;n<num_atoms_local;n++) {
-        for(n=0;n<num_atoms_local;n++) {
-            if(atom_type[n] != FROZEN) {
-                velocities[3*n+0] += accelerations[3*n+0]*dt_half;
-                velocities[3*n+1] += accelerations[3*n+1]*dt_half;
-                velocities[3*n+2] += accelerations[3*n+2]*dt_half;
-            }
-        }
+    for(n=num_atoms_frozen;n<num_atoms_local;n++) {
+        velocities[3*n+0] += accelerations[3*n+0]*dt_half;
+        velocities[3*n+1] += accelerations[3*n+1]*dt_half;
+        velocities[3*n+2] += accelerations[3*n+2]*dt_half;
     }
 }
 
 void System::full_kick() {
-    for(n=0;n<num_atoms_local;n++) {
-        if(atom_type[n] != FROZEN) {
-            velocities[3*n+0] += accelerations[3*n+0]*dt;
-            velocities[3*n+1] += accelerations[3*n+1]*dt;
-            velocities[3*n+2] += accelerations[3*n+2]*dt;
-        }
+    for(n=num_atoms_frozen;n<num_atoms_local;n++) {
+        velocities[3*n+0] += accelerations[3*n+0]*dt;
+        velocities[3*n+1] += accelerations[3*n+1]*dt;
+        velocities[3*n+2] += accelerations[3*n+2]*dt;
     }
 }
 
 void System::move() {
     mdtimer->start_moving();
 
-    for(n=0;n<num_atoms_local;n++) {
-        if(atom_type[n] != FROZEN) {
-            positions[n][0] += velocities[3*n+0]*dt;
-            positions[n][1] += velocities[3*n+1]*dt;
-            positions[n][2] += velocities[3*n+2]*dt;
-        }
+    for(n=num_atoms_frozen;n<num_atoms_local;n++) {
+        positions[n][0] += velocities[3*n+0]*dt;
+        positions[n][1] += velocities[3*n+1]*dt;
+        positions[n][2] += velocities[3*n+2]*dt;
         atom_moved[n] = false;
     }
 

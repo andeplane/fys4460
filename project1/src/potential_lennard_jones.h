@@ -12,7 +12,7 @@ void System::calculate_accelerations() {
     potential_energy = 0.0;
     pressure_forces = 0;
     memset(accelerations,0,num_atoms_local*3*sizeof(double));
-    for (c=0; c<num_cells_including_ghosts_xyz; c++) head[c] = EMPTY;
+    for (c=0; c<num_cells_including_ghosts_xyz; c++) { head_all_atoms[c] = EMPTY; head_free_atoms[c] = EMPTY; }
 
     for (i=0; i<num_atoms_local+num_atoms_ghost; i++) {
         for (a=0; a<3; a++) mc[a] = (positions[i][a]+cell_length[a])/cell_length[a];
@@ -20,8 +20,12 @@ void System::calculate_accelerations() {
         cell_index_from_vector(mc,cell_index);
 
         // Set this atom at the head of the linked list
-        linked_list[i] = head[cell_index];
-        head[cell_index] = i;
+        linked_list_all_atoms[i] = head_all_atoms[cell_index];
+        head_all_atoms[cell_index] = i;
+        if(atom_type[i] != FROZEN) {
+            linked_list_free_atoms[i] = head_free_atoms[cell_index];
+            head_free_atoms[cell_index] = i;
+        }
     }
 
     double dr2_inverse, dr6_inverse;
@@ -32,7 +36,7 @@ void System::calculate_accelerations() {
         for (mc[1]=1; mc[1]<=num_cells_local[1]; mc[1]++) {
             for (mc[2]=1; mc[2]<=num_cells_local[2]; mc[2]++) {
                 cell_index = mc[0]*num_cells_including_ghosts_yz+mc[1]*num_cells_including_ghosts[2]+mc[2];
-                if ( head[cell_index] == EMPTY ) continue;
+                if ( head_all_atoms[cell_index] == EMPTY ) continue;
 
                 // Loop through all neighbors of this cell. Note that i only sums over local atoms.
                 for (mc1[0]=mc[0]-1; mc1[0]<=mc[0]+1; mc1[0]++) {
@@ -40,11 +44,11 @@ void System::calculate_accelerations() {
                         for (mc1[2]=mc[2]-1; mc1[2]<=mc[2]+1; mc1[2]++) {
                             cell_index_2 = mc1[0]*num_cells_including_ghosts_yz+mc1[1]*num_cells_including_ghosts[2]+mc1[2];
 
-                            if(head[cell_index_2] == EMPTY) continue;
-                            i = head[cell_index];
+                            if(head_all_atoms[cell_index_2] == EMPTY) continue;
+                            i = head_all_atoms[cell_index];
 
                             while (i != EMPTY) {
-                                j = head[cell_index_2];
+                                j = head_all_atoms[cell_index_2];
                                 while (j != EMPTY) {
 #ifdef MANY_FROZEN_ATOMS
                                     if(i < j && !(atom_type[i]==FROZEN && atom_type[j]==FROZEN)) {
@@ -88,9 +92,9 @@ void System::calculate_accelerations() {
                                         }
                                     } // if( i != j) {
 
-                                    j = linked_list[j];
+                                    j = linked_list_all_atoms[j];
                                 } // while (j != EMPTY) {
-                                i = linked_list[i];
+                                i = linked_list_all_atoms[i];
 
                             } // while (i != EMPTY) {
 

@@ -29,6 +29,7 @@ private:
     void set_topology();
     void init_parameters();
     void create_FCC();
+    void rearrange_frozen_atoms();
     inline bool atom_did_change_node(double* ri, int ku);
     inline bool atom_should_be_copied(double *ri, int ku);
     inline void cell_index_from_ijk(const int &i, const int &j, const int &k, unsigned int &cell_index);
@@ -40,7 +41,8 @@ public:
     MDTimer *mdtimer;
     UnitConverter *unit_converter;
     StatisticsSampler *sampler;
-    int  *head;
+    int  *head_all_atoms;
+    int  *head_free_atoms;
 
     unsigned long steps;
     unsigned int myid;
@@ -53,7 +55,8 @@ public:
     double system_length[3];
     int num_nodes;
     unsigned long num_atoms_local;
-    unsigned long num_atoms_global;
+    unsigned long num_atoms_all_global;
+    unsigned long num_atoms_free_global;
     unsigned long num_atoms_ghost;
     unsigned long num_atoms_frozen;
     unsigned long num_atoms_free;
@@ -77,7 +80,8 @@ public:
     double mass_inverse, pressure_forces;
     double velocities[3*MAX_ATOM_NUM];
     unsigned long atom_type[MAX_ATOM_NUM];
-    int linked_list[MAX_ATOM_NUM];
+    int linked_list_all_atoms[MAX_ATOM_NUM];
+    int linked_list_free_atoms[MAX_ATOM_NUM];
     bool is_ghost_cell[MAX_CELL_NUM];
     double initial_positions[3*MAX_ATOM_NUM];
 

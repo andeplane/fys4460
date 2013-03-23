@@ -55,6 +55,8 @@ public:
     unsigned long num_atoms_local;
     unsigned long num_atoms_global;
     unsigned long num_atoms_ghost;
+    unsigned long num_atoms_frozen;
+    unsigned long num_atoms_free;
     long i,j,k,n,m,a,b,c, nx, ny, nz;
 
     double origo[3];

@@ -52,12 +52,51 @@ void System::setup(int myid_, Settings *settings_) {
     if(myid==0) cout << "Atoms: " << num_atoms_global << endl;
     if(myid==0) cout << "Processors: " << num_nodes << " (" << settings->nodes_x << "," << settings->nodes_y << "," << settings->nodes_z << ")" << endl;
     if(myid==0) cout << "Atoms/processor: " << num_atoms_global/num_nodes << endl;
+    double positions_copy[num_atoms_local][3];
+    double velocities_copy[3*num_atoms_local];
+    unsigned long atom_type_copy[num_atoms_local];
+
 
     for(i=0;i<num_atoms_local;i++) {
-        if(atom_type[i] == FROZEN) {
-            velocities[3*i+0] = 0;
-            velocities[3*i+1] = 0;
-            velocities[3*i+2] = 0;
+        positions_copy[i][0] = positions[i][0];
+        positions_copy[i][1] = positions[i][1];
+        positions_copy[i][2] = positions[i][2];
+
+        velocities_copy[3*i+0] = velocities[3*i+0];
+        velocities_copy[3*i+1] = velocities[3*i+1];
+        velocities_copy[3*i+2] = velocities[3*i+2];
+        atom_type_copy[i] = atom_type[i];
+    }
+
+    num_atoms_frozen = 0;
+    num_atoms_free = 0;
+    for(i=0;i<num_atoms_local;i++) {
+        if(atom_type_copy[i] == FROZEN) {
+            int index = (num_atoms_frozen + num_atoms_free);
+
+            velocities[3*index+0] = 0;
+            velocities[3*index+1] = 0;
+            velocities[3*index+2] = 0;
+            positions[index][0] = positions_copy[i][0];
+            positions[index][1] = positions_copy[i][1];
+            positions[index][2] = positions_copy[i][2];
+            atom_type[index] = atom_type_copy[i];
+            num_atoms_frozen++;
+        }
+    }
+
+    for(i=0;i<num_atoms_local;i++) {
+        if(atom_type_copy[i] != FROZEN) {
+            int index = (num_atoms_frozen + num_atoms_free);
+            velocities[3*index + 0] = velocities_copy[3*i+0];
+            velocities[3*index + 1] = velocities_copy[3*i+1];
+            velocities[3*index + 2] = velocities_copy[3*i+2];
+            positions[index][0] = positions_copy[i][0];
+            positions[index][1] = positions_copy[i][1];
+            positions[index][2] = positions_copy[i][2];
+            atom_type[index] = atom_type_copy[i];
+            num_atoms_free++;
+
         }
     }
 
@@ -237,7 +276,7 @@ void System::mpi_move() {
 
     for(short dimension=0;dimension<3;dimension++) {
         /* Scan all the residents & immigrants to list moved-out atoms */
-        for (i=0; i<num_atoms_local+new_atoms; i++) {
+        for (i=num_atoms_frozen; i<num_atoms_local+new_atoms; i++) {
             node_lower = 2*dimension;
             node_higher = 2*dimension+1;
             /* Register a to-be-copied atom in move_queue[kul|kuh][] */
@@ -322,8 +361,8 @@ void System::mpi_move() {
         mdtimer->end_mpi();
     }
 
-    int ipt = 0;
-    for (i=0; i<num_atoms_local+new_atoms; i++) {
+    int ipt = num_atoms_frozen;
+    for (i=num_atoms_frozen; i<num_atoms_local+new_atoms; i++) {
         if (!atom_moved[i]) {
             for (a=0; a<3; a++) {
                 positions [ipt][a] = positions [i][a];
@@ -337,6 +376,7 @@ void System::mpi_move() {
 
     /* Update the compressed # of resident atoms */
     num_atoms_local = ipt;
+    num_atoms_free = num_atoms_local - num_atoms_free;
 }
 
 void System::mpi_copy() {

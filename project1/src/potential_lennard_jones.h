@@ -39,6 +39,7 @@ void System::calculate_accelerations() {
                     for (mc1[1]=mc[1]-1; mc1[1]<=mc[1]+1; mc1[1]++) {
                         for (mc1[2]=mc[2]-1; mc1[2]<=mc[2]+1; mc1[2]++) {
                             cell_index_2 = mc1[0]*num_cells_including_ghosts_yz+mc1[1]*num_cells_including_ghosts[2]+mc1[2];
+
                             if(head[cell_index_2] == EMPTY) continue;
                             i = head[cell_index];
 
@@ -83,7 +84,6 @@ void System::calculate_accelerations() {
                                                 accelerations[3*j+1] -= force*dr[1];
                                                 accelerations[3*j+2] -= force*dr[2];
                                             }
-
 
                                         }
                                     } // if( i != j) {

@@ -44,6 +44,7 @@ public:
     int  *head_all_atoms;
     int  *head_free_atoms;
 
+    bool sample_statistics;
     unsigned long steps;
     unsigned int myid;
     unsigned int node_index[3];

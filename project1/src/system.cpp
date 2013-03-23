@@ -487,12 +487,12 @@ void System::move() {
 }
 
 void System::step() {
-    steps++;
     move();
     mpi_move();
     mpi_copy();
     calculate_accelerations();
     full_kick();
+    steps++;
     t += dt;
     if(settings->statistics_interval && steps % settings->statistics_interval == 0) sampler->sample();
 }

@@ -10,13 +10,15 @@ program = MD()
 md = program.compile(skip_compile=False, name="job1")
 
 program.reset()
-program.nodes_x = 2
-program.nodes_y = 2
-program.nodes_z = 2
+program.nodes_x = 1
+program.nodes_y = 1
+program.nodes_z = 1
 
 program.prepare_new_system()
 program.run(md)
 
-program.timesteps = 5000
+program.timesteps = 1000
+#program.create_movie_files = True
 program.create_config_file()
 program.run(md)
+program.create_movie(frames=1000)

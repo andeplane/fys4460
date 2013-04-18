@@ -35,7 +35,7 @@ int main(int args, char *argv[]) {
 	double r2;
 	int frozen_atoms = 0;
 	for(int cpu=0;cpu<cpus;cpu++) { 
-		sprintf(filename,"release/state_files/state%04d.bin",cpu);
+		sprintf(filename,"state_files/state%04d.bin",cpu);
 		ifstream state_file(filename,ios::in | ios::binary);
 
 		state_file.read(reinterpret_cast<char*>(&num_particles),sizeof(int));

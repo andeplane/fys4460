@@ -25,7 +25,7 @@ class MD:
 		self.load_state = True
 		self.thermostat_enabled = False
 		self.timesteps = 5000
-		self.create_movie = False
+		self.create_movie_files = False
 		self.movie_every_n_frame = 1
 		self.statistics_interval = 100
 		self.nodes_x = 1
@@ -135,7 +135,7 @@ class MD:
 			line = line.replace('__FCC_b__',str(self.FCC_b) )
 			line = line.replace('__load_state__',str(self.load_state).lower() )
 			line = line.replace('__thermostat_enabled__',str(self.thermostat_enabled).lower() )
-			line = line.replace('__create_movie__',str(self.create_movie).lower() )
+			line = line.replace('__create_movie__',str(self.create_movie_files).lower() )
 			line = line.replace('__timesteps__',str(self.timesteps) )
 			line = line.replace('__temperature__',str(self.temperature) )
 			line = line.replace('__movie_every_n_frame__',str(self.movie_every_n_frame) )
@@ -185,6 +185,25 @@ class MD:
 		steps_per_second = self.timesteps / max(t1,1)
 
 		self.log("Process used %d seconds (%d timesteps per second)" % ( t1, steps_per_second ))
+
+	def create_cylinder(self, radius, cylinder_dimension, center_x, center_y, center_z):
+		num_nodes = self.nodes_x*self.nodes_y*self.nodes_z
+		self.run_command("%s -O3 program/create_cylinder/create_cylinder.cpp -o create_cylinder" % self.compiler)
+		self.run_command("./create_cylinder %d %f %d %f %f %f" % (num_nodes, radius, cylinder_dimension, center_x, center_y, center_z))
+
+	def create_spheres(self, num_spheres, r_min, r_max, x_max, y_max, z_max):
+		num_nodes = self.nodes_x*self.nodes_y*self.nodes_z
+		self.run_command("%s -O3 program/create_spheres/create_spheres.cpp -o create_spheres" % self.compiler)
+		self.run_command("./create_spheres %d %d %f %f %f %f %f" % (num_nodes, num_spheres, r_min, r_max, x_max, y_max, z_max))
+
+	def create_spheres(self, num_spheres, r_min, r_max, x_max, y_max, z_max):
+		num_nodes = self.nodes_x*self.nodes_y*self.nodes_z
+		self.run_command("%s -O3 program/create_spheres/create_spheres.cpp -o create_spheres" % self.compiler)
+		self.run_command("./create_spheres %d %d %f %f %f %f %f" % (num_nodes, num_spheres, r_min, r_max, x_max, y_max, z_max))
+	def create_movie(self, frames):
+		num_nodes = self.nodes_x*self.nodes_y*self.nodes_z
+		self.run_command("%s -O3 program/create_movie/create_movie.cpp -o create_movie" % self.compiler)
+		self.run_command("./create_movie %d %d" % (num_nodes, frames) )
 
 	def prepare_new_system(self):
 		self.timesteps = 1

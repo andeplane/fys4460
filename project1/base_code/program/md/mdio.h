@@ -15,6 +15,7 @@ public:
     bool movie_file_open;
     FILE *energy_file;
     FILE *pressure_file;
+    FILE *velocity_file;
 
     MDIO();
     void setup(System *system_);

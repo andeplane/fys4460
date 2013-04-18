@@ -13,6 +13,8 @@
 #include <statisticssampler.h>
 #include <atom_types.h>
 
+#include <potential_lennard_jones.h>
+
 using namespace std;
 System::System() {
 
@@ -22,7 +24,6 @@ void System::setup(int myid_, Settings *settings_) {
     mdtimer = new MDTimer();
     mdtimer->start_system_initialize();
     unit_converter = new UnitConverter();
-    sampler = new StatisticsSampler(this);
 
     myid = myid_;
     settings = settings_;
@@ -160,7 +161,7 @@ void System::create_FCC() {
 }
 
 void System::init_parameters() {
-    mass_inverse = 1.0/39.948;
+    mass_inverse = 1.0/settings->mass;
     r_cut = settings->r_cut;
     dt = settings->dt;
     dt_half = dt/2;
@@ -455,8 +456,6 @@ void System::mpi_copy() {
     num_atoms_ghost = new_ghost_atoms;
 }
 
-#include <potential_lennard_jones.h>
-
 void System::half_kick() {
     for(n=num_atoms_frozen;n<num_atoms_local;n++) {
         velocities[3*n+0] += accelerations[3*n+0]*dt_half;
@@ -486,13 +485,20 @@ void System::move() {
     mdtimer->end_moving();
 }
 
+void System::apply_gravity() {
+    for(n=num_atoms_frozen;n<num_atoms_local;n++) {
+        velocities[3*n+settings->gravity_direction] += settings->gravity_force*dt;
+    }
+}
+
 void System::step() {
     move();
     mpi_move();
     mpi_copy();
-    calculate_accelerations();
+    if(settings->gravity_direction >= 0) apply_gravity();
+    if(settings->many_frozen_atoms) calculate_accelerations_many_frozen_atoms();
+    else calculate_accelerations();
     full_kick();
     steps++;
     t += dt;
-    if(settings->statistics_interval && steps % settings->statistics_interval == 0) sampler->sample();
 }

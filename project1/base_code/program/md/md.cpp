@@ -26,7 +26,7 @@ int main(int args, char *argv[]) {
 
     double t_start = MPI_Wtime();
 
-    Settings *settings = new Settings("../md.ini");
+    Settings *settings = new Settings("md.ini");
     int num_nodes = settings->nodes_x*settings->nodes_y*settings->nodes_z;
     if(numprocs != num_nodes) {
         if(myid==0) cout << "Wrong number of processors. " << endl << "Config files says " << num_nodes << ". MPI started with " << numprocs << "." << endl;
@@ -36,14 +36,25 @@ int main(int args, char *argv[]) {
 
     System *system = new System();
     system->setup(myid, settings);
+
+    ifstream to_continue("Tocontinue");
+    double t = 0;
+    unsigned long steps = 0;
+    to_continue >> t;
+    to_continue >> steps;
+    to_continue.close();
+    system->t = t;
+    system->steps = steps;
+
     Thermostat thermostat(settings->thermostat_relaxation_time);
+    StatisticsSampler *sampler = new StatisticsSampler(system);
 
     for(int i=0;i<settings->timesteps;i++) {
-        system->sample_statistics = settings->statistics_interval && (system->steps % settings->statistics_interval == 0);
+        system->sample_statistics = settings->statistics_interval && ((system->steps+1) % settings->statistics_interval == 0);
         system->step();
-        if(settings->thermostat_enabled) thermostat.apply(system->sampler,system,settings->temperature);
-
-        system->mdio->save_state_to_movie_file();
+        if(system->sample_statistics) sampler->sample();
+        if(settings->thermostat_enabled) thermostat.apply(sampler,system,settings->temperature);
+        if(settings->create_movie) system->mdio->save_state_to_movie_file();
 	}
 
     system->mdio->save_state_to_file_binary();
@@ -63,6 +74,9 @@ int main(int args, char *argv[]) {
         cout << endl << settings->timesteps / total_time << " timesteps / second. " << endl;
         cout << system->num_atoms_all_global*settings->timesteps / (1000*total_time) << "k atom-timesteps / second. " << endl;
         cout << system->num_atoms_all_global*settings->timesteps / (1000*total_time*numprocs) << "k atom-timesteps / second (per node). " << endl;
+        ofstream to_continue_write("Tocontinue");
+        to_continue_write << system->t << " " << system->steps;
+        to_continue_write.close();
     }
 
     MPI_Finalize();

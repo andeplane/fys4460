@@ -9,6 +9,9 @@ Settings::Settings(string filename) {
         dt = ini_file.getdouble("dt");
         r_cut = ini_file.getdouble("r_cut");
         thermostat_relaxation_time = ini_file.getdouble("thermostat_relaxation_time");
+        gravity_force = ini_file.getdouble("gravity_force");
+        mass = ini_file.getdouble("mass");
+        gravity_direction = ini_file.getint("gravity_direction");
         unit_cells_x = ini_file.getint("unit_cells_x");
         unit_cells_y = ini_file.getint("unit_cells_y");
         unit_cells_z = ini_file.getint("unit_cells_z");
@@ -21,6 +24,7 @@ Settings::Settings(string filename) {
         create_movie = ini_file.getbool("create_movie");
         load_state = ini_file.getbool("load_state");
         thermostat_enabled = ini_file.getbool("thermostat_enabled");
+        many_frozen_atoms =  ini_file.getbool("many_frozen_atoms");
     }
     catch (int e) {
         cout << "Could not load settings file." << endl;

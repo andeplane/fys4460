@@ -13,8 +13,9 @@ void MDIO::setup(System *system_) {
     settings = system->settings;
     movie_file_open = false;
     if(system->myid==0) {
-        energy_file = fopen("energy.txt","w");
-        pressure_file = fopen("pressure.txt","w");
+        energy_file = fopen("statistics/energy.txt","w");
+        pressure_file = fopen("statistics/pressure.txt","w");
+        velocity_file = fopen("statistics/velocity.txt","w");
     }
 }
 
@@ -23,7 +24,7 @@ void MDIO::save_state_to_movie_file() {
     if(settings->create_movie && !(system->steps % settings->movie_every_n_frame)) {
         if(!movie_file_open) {
             char *filename = new char[100];
-            sprintf(filename,"state_files/movie%04d.bin",system->myid);
+            sprintf(filename,"movie_files/movie%04d.bin",system->myid);
             movie_file = new ofstream(filename,ios::out | ios::binary);
             movie_file_open = true;
             data = new double[3*MAX_ATOM_NUM];
@@ -111,4 +112,5 @@ void MDIO::finalize() {
     if(system->myid != 0) return;
     fclose(energy_file);
     fclose(pressure_file);
+    fclose(velocity_file);
 }

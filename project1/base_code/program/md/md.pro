@@ -35,7 +35,7 @@ HEADERS += \
     potential_lennard_jones.h
 
 mac {
-    QMAKE_CXX = icc
+    QMAKE_CXX = icpc
     CONFIG -= app_bundle
     LIBS   +=
     INCLUDEPATH +=
@@ -45,7 +45,8 @@ mac {
 }
 
 unix:!mac {
-    QMAKE_CXX = mpic++
+
+    QMAKE_CXX = icpc
     LIBS   +=
     INCLUDEPATH +=
     QMAKE_CXXFLAGS +=

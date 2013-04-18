@@ -7,7 +7,6 @@ class MDIO;
 class MDTimer;
 class Random;
 class UnitConverter;
-class StatisticsSampler;
 
 #include <fstream>
 #include <vector>
@@ -20,12 +19,15 @@ using namespace std;
 class System {
 private:
     void initialize();
-    void calculate_accelerations();
-    void half_kick();
-    void full_kick();
+    void move();
     void mpi_move();
     void mpi_copy();
-    void move();
+    void calculate_accelerations();
+    void calculate_accelerations_many_frozen_atoms();
+    void apply_gravity();
+    void full_kick();
+    void half_kick();
+
     void set_topology();
     void init_parameters();
     void create_FCC();
@@ -40,7 +42,6 @@ public:
     Random *rnd;
     MDTimer *mdtimer;
     UnitConverter *unit_converter;
-    StatisticsSampler *sampler;
     int  *head_all_atoms;
     int  *head_free_atoms;
 

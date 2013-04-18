@@ -4,6 +4,8 @@
 #include <stdlib.h>
 
 #define MAX_ATOM_NUM 100000
+#define ARGON  0
+#define FROZEN 1
 double pos_coeff = 3.405;
 double pos_coeff_squared = pos_coeff*pos_coeff;
 
@@ -25,7 +27,7 @@ int main(int args, char *argv[]) {
 	center[2] = atof(argv[6])/pos_coeff;
 
 	double data[6*MAX_ATOM_NUM];
-	bool  is_frozen[MAX_ATOM_NUM];
+	unsigned long  atom_type[MAX_ATOM_NUM];
 	char *filename = new char[100];
 	int num_particles;
 	
@@ -38,7 +40,7 @@ int main(int args, char *argv[]) {
 
 		state_file.read(reinterpret_cast<char*>(&num_particles),sizeof(int));
 		state_file.read(reinterpret_cast<char*>(&data),6*num_particles*sizeof(double));
-		state_file.read(reinterpret_cast<char*>(&is_frozen),num_particles*sizeof(bool));
+		state_file.read(reinterpret_cast<char*>(&atom_type),num_particles*sizeof(unsigned long));
 		
 		for(int i=0;i<num_particles;i++) {
 			r2 = 0;
@@ -47,17 +49,16 @@ int main(int args, char *argv[]) {
 			}
 			
 			if(r2 > radius_squared) {
-				is_frozen[i] = true;
+				atom_type[i] = FROZEN;
 				frozen_atoms++;
 			}
-			else is_frozen[i] = false;
 		}
 		state_file.close();
 
 		ofstream save_state_file(filename,ios::out | ios::binary);
 		save_state_file.write(reinterpret_cast<char*>(&num_particles),sizeof(int));
 		save_state_file.write(reinterpret_cast<char*>(&data),6*num_particles*sizeof(double));
-		save_state_file.write(reinterpret_cast<char*>(&is_frozen),num_particles*sizeof(bool));
+		save_state_file.write(reinterpret_cast<char*>(&atom_type),num_particles*sizeof(unsigned long));
 		save_state_file.close();
 		cout << "Created cylinder in cpu " << cpu << endl;
 	}

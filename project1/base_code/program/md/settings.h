@@ -12,6 +12,9 @@ public:
     double FCC_b;
     double r_cut;
     double thermostat_relaxation_time;
+    double gravity_force;
+    double mass;
+    int gravity_direction;
     int unit_cells_x;
     int unit_cells_y;
     int unit_cells_z;
@@ -24,5 +27,6 @@ public:
     bool create_movie;
     bool load_state;
     bool thermostat_enabled;
+    bool many_frozen_atoms;
 
 };

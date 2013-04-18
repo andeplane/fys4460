@@ -23,8 +23,12 @@ public:
     void sample_kinetic_energy();
     void sample_potential_energy();
     void sample_pressure();
+    void sample_velocity_distribution();
+    void sample_momentum_cm();
     double pressure;
     double kinetic_energy;
     double potential_energy;
     double temperature;
+    double v_cm[3];
+    double p_cm[3];
 };
